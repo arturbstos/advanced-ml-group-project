@@ -23,7 +23,7 @@
 --  whose semantic content actually changed, so seed_vectors.py without
 --  --force will re-embed exactly the rows that need it.
 --
---  TAXONOMY (15 categories, ~66 entries)
+--  TAXONOMY (16 categories, 66 entries)
 --  -------------------------------------
 --  Coverage was scoped before authoring to ensure the corpus is methodical
 --  rather than ad-hoc. Every category targets ~3-6 entries with a deliberate

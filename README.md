@@ -54,12 +54,22 @@ psql -U postgres -d freelancer_analyzer -f db/seed_rates.sql
 *This inserts 24 rows (8 skill categories × 3 experience tiers). The script is idempotent — re-running it replaces only rows where `source = 'Freelancer-Kompass 2025'`. See **Methodology → Rate Benchmarks** below for how p25/p75 are derived from the report's published medians.*
 
 ### 4. Seed the Playbook Entries
-The Layer 2 playbook contains the curated risky-clause patterns the analyzer matches contracts against. The current corpus is 66 entries spanning 15 clause categories (compensation, payment terms, IP, Scheinselbstständigkeit, termination, liability, AGB-Kontrolle, confidentiality, non-compete, acceptance, warranty, data protection, working time, dispute resolution, force majeure). Every entry carries a `statute_ref`, `source_url`, and `source_type` (statute / case / agency / template / custom) — the integrity gate expects all three to be non-empty.
+The Layer 2 playbook contains the curated risky-clause patterns the analyzer matches contracts against. The current corpus is 66 entries spanning 16 clause categories (compensation, payment terms, late-payment interest, IP, Scheinselbstständigkeit, termination, liability, AGB-Kontrolle, confidentiality, non-compete, Werkvertrag-Abnahme, warranty, data protection, working time, dispute resolution, force majeure). Every entry carries a `statute_ref`, `source_url`, and `source_type` (statute / case / agency / template / custom) — the integrity gate expects all three to be non-empty.
 
 ```bash
 psql -U postgres -d freelancer_analyzer -f db/seed_playbook.sql
 ```
 *The script uses `ON CONFLICT (id) DO UPDATE`, so re-running propagates edits. The `embedding` column is reset to NULL only for rows whose semantic content actually changed, which means the next `seed_vectors.py` run re-embeds exactly the rows that need it.*
+
+#### Integrity gate
+The playbook is treated as legal data, not seed text. `scripts/check_playbook.py` is a static integrity check that runs in CI on every push and PR (`.github/workflows/playbook-integrity.yml`) and that you should run locally before committing changes to the seed file:
+
+```bash
+python scripts/check_playbook.py             # static checks (no DB required)
+python scripts/check_playbook.py --check-db  # also verify the live DB matches
+```
+
+The gate asserts: every row has 10 fields, `statute_ref` and `source_url` are non-empty, `source_type` is in `{statute, case, agency, template, custom}`, `risk_level` is in `{high, medium, low}`, `clause_type` is within the locked taxonomy (any typo creates an orphan that the analyzer cannot match), `PB-XXX` ids are unique, and the entry count sits within the configured floor/ceiling. With `--check-db` it additionally verifies the `playbook` table has the expected schema, the row count matches the file, and any populated embeddings have the expected 1536 dimensions.
 
 ### 5. Seed the Playbook Vectors
 The application compares contract clauses against the playbook via cosine similarity over OpenAI embeddings. You must generate the embeddings before the analyzer can match anything:

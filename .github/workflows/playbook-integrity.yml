@@ -1,0 +1,48 @@
+name: Playbook Integrity
+
+# This workflow is the executable form of the moat claim:
+# every change to the seed file must pass the integrity gate before merging.
+#
+# It deliberately has zero pip dependencies — the gate script (scripts/check_playbook.py)
+# parses db/seed_playbook.sql with a hand-rolled, dollar-quote-aware tokenizer
+# and uses only the Python stdlib. That keeps CI fast (~5s) and rules out the
+# class of "the test infra broke, not the data" red herrings.
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "db/seed_playbook.sql"
+      - "scripts/check_playbook.py"
+      - ".github/workflows/playbook-integrity.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "db/seed_playbook.sql"
+      - "scripts/check_playbook.py"
+      - ".github/workflows/playbook-integrity.yml"
+  workflow_dispatch:  # allow manual re-runs from the Actions tab
+
+jobs:
+  integrity:
+    name: Validate playbook entries
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run integrity gate
+        run: python scripts/check_playbook.py
+
+      - name: Summary on failure
+        if: failure()
+        run: |
+          echo "::error::playbook integrity check failed — see job log above."
+          echo "Run the same check locally with:  python scripts/check_playbook.py"
