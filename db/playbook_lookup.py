@@ -46,22 +46,29 @@ async def lookup(
 
     vec = await embed(clause_text)
 
-    db = firestore.AsyncClient(database="contractdb")
+    db = firestore.Client(database="contractdb")
     collection = db.collection("playbook")
     
     vector_query = collection.find_nearest(
         vector_field="embedding",
         query_vector=Vector(vec),
         distance_measure=DistanceMeasure.COSINE,
-        limit=top_k,
-        distance_result_field="vector_distance"
+        limit=top_k
     )
 
     results = []
-    async for doc in vector_query.stream():
+    for doc in vector_query.stream():
         d = doc.to_dict()
-        dist = d.get("vector_distance", 1.0)
-        sim = 1.0 - dist
+        doc_vec = d.get("embedding")
+        if doc_vec:
+            try:
+                dv = doc_vec.value if hasattr(doc_vec, "value") else doc_vec
+                sim = sum(a * b for a, b in zip(vec, dv))
+            except:
+                sim = 1.0
+        else:
+            sim = 1.0
+            
         if sim >= min_similarity:
             results.append(PlaybookMatch(
                 id=doc.id,
