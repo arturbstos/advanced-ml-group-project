@@ -17,7 +17,6 @@ from typing import List, Optional
 
 from openai import AsyncOpenAI
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.ingestion import ContractExtraction
 from db import playbook_lookup, rate_lookup, statute_lookup
@@ -124,7 +123,6 @@ def _clause_concerns_rate(clause: str) -> bool:
 
 async def analyze(
     extraction: ContractExtraction,
-    session: AsyncSession,
 ) -> List[Finding]:
     """Run the full clause analysis over an extracted contract."""
     findings: List[Finding] = []
@@ -133,12 +131,10 @@ async def analyze(
     rate_bench = await rate_lookup.lookup(
         skill_category=extraction.skill_category,
         experience=extraction.experience_level,
-        session=session,
         region=extraction.region,
     )
 
-    # 2. Synthetic "rate below p25" finding — surfaces a rate issue even if
-    #    no specific clause wording triggers it in the per-clause loop.
+    # 2. Synthetic "rate below p25" finding
     if rate_bench and extraction.hourly_rate_eur < float(rate_bench.p25):
         findings.append(
             Finding(
@@ -165,11 +161,11 @@ async def analyze(
 
     # 3. Per-clause LLM analysis.
     for clause in extraction.clauses:
-        matches = await playbook_lookup.lookup(clause, session=session, top_k=3)
+        matches = await playbook_lookup.lookup(clause, top_k=3)
 
         statutes: List[statute_lookup.StatuteRef] = []
         if matches:
-            statutes = await statute_lookup.lookup(matches[0].clause_type, session)
+            statutes = await statute_lookup.lookup(matches[0].clause_type)
 
         clause_rate_ctx = rate_context if _clause_concerns_rate(clause) else None
 

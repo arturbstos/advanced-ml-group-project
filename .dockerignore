@@ -1,0 +1,16 @@
+.env
+.venv
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+firebase-adminsdk.json
+context_pdfs/
+tests/
+UX/
+frontend/
+scripts/
+*.md
+.firebaserc
+firebase.json

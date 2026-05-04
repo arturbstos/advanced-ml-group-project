@@ -10,31 +10,44 @@ from dotenv import load_dotenv
 # time, so the key must already be in the environment by then.
 load_dotenv()
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Initialize Firebase Admin SDK
+cred_path = "firebase-adminsdk.json"
+if os.path.exists(cred_path):
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+else:
+    firebase_admin.initialize_app()
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 # Pipeline: ingest -> analyze -> assemble report
 from app.services.ingestion import process_contract
 from app.services.clause_analyzer import analyze as analyze_clauses
 from app.services.report_builder import build as build_report
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
 app = FastAPI(title="German Freelancer Contract Analyzer")
-engine = create_async_engine(DATABASE_URL, echo=True)
 
-
-async def get_db():
-    async with AsyncSession(engine) as session:
-        yield session
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allow all origins for local web development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
-async def health_check(db: AsyncSession = Depends(get_db)):
+async def health_check():
     """Verify API is up and the database connection is functional."""
     try:
-        await db.execute(text("SELECT 1"))
+        from google.cloud import firestore
+        db = firestore.Client(database="contractdb")
+        db.collection("health").limit(1).get()
         return {"status": "ok", "database": "connected"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -43,7 +56,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 @app.post("/analyze")
 async def analyze_contract(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
 ):
     """Full analysis pipeline: ingest -> analyze -> assemble report.
 
@@ -51,9 +63,6 @@ async def analyze_contract(
     2. Analyze - per-clause risk analysis against playbook, statutes, rates.
     3. Report  - summary counts, findings list, negotiation brief.
     """
-    # Use a NamedTemporaryFile so concurrent uploads never collide on the
-    # same path and a malicious `file.filename` (e.g. "../../etc/passwd")
-    # can't escape the working directory.
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         shutil.copyfileobj(file.file, tmp)
         temp_path = tmp.name
@@ -62,11 +71,9 @@ async def analyze_contract(
         try:
             extraction = await process_contract(temp_path)
         except ValueError as e:
-            # Scanned / unreadable PDFs raise ValueError in ingestion.
-            # Return a 400 so the client gets a clean error instead of a 500.
             raise HTTPException(status_code=400, detail=str(e))
 
-        findings = await analyze_clauses(extraction, db)
+        findings = await analyze_clauses(extraction)
         report = build_report(extraction, findings)
         return report
     finally:

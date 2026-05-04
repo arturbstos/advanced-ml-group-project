@@ -1,17 +1,14 @@
 # Web & API
 fastapi
 uvicorn[standard]
-streamlit
-requests
 python-multipart  # required by FastAPI for UploadFile / File(...)
-
-# Database
-sqlalchemy[asyncio]
-asyncpg
-pgvector
 
 # AI & Processing
 openai
 pdfplumber
 python-dotenv
 pydantic
+
+# Firebase / Firestore
+firebase-admin==6.5.0
+google-cloud-firestore==2.16.0

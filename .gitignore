@@ -7,3 +7,6 @@ tests/samples/*.pdf
 
 # Ignored folder for prompt context
 context_pdfs/
+
+# Firebase Credentials
+firebase-adminsdk.json
