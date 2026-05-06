@@ -1,24 +1,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { 
-    getAuth, 
-    signInWithPopup, 
-    GoogleAuthProvider, 
-    onAuthStateChanged, 
+import {
+    getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
+    onAuthStateChanged,
     signOut,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-
-const firebaseConfig = {
-  projectId: "veritas-43d91",
-  appId: "1:3811281641:web:da310cda9558532394fe78",
-  storageBucket: "veritas-43d91.firebasestorage.app",
-  apiKey: "AIzaSyAAzSs-s0x4dFxx_4t5YG_1u42ht2UzC6Y",
-  authDomain: "veritas-43d91.firebaseapp.com",
-  messagingSenderId: "3811281641",
-  measurementId: "G-2EF3YTJSEP"
-};
+import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
