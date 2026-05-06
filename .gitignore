@@ -10,3 +10,7 @@ context_pdfs/
 
 # Firebase Credentials
 firebase-adminsdk.json
+
+# Gemini conversation exports
+Saving Side-by-Side Demo.md
+Verifying Pipeline Readiness.md

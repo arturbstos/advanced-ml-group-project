@@ -26,7 +26,7 @@ async def process_contract(file_path: str) -> ContractExtraction:
 
     text = text.strip()
     if not text:
-        raise ValueError("Could not extract text from PDF — scanned documents are not supported yet.")
+        raise ValueError("Scanned PDF detected — only text-based PDFs are supported. Please use a digitally-created PDF.")
 
     system_prompt = """You are an expert legal AI assistant specialized in analyzing German freelancer contracts.
 Your task is to extract structured data from the provided contract text according to the schema.

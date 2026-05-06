@@ -16,7 +16,14 @@ from google.cloud.firestore_v1.base_vector_query import DistanceMeasure
 EMBED_MODEL = "text-embedding-3-small"
 EMBED_DIM = 1536
 
-_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_openai = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_db: Optional[firestore.AsyncClient] = None
+
+def _get_db() -> firestore.AsyncClient:
+    global _db
+    if _db is None:
+        _db = firestore.AsyncClient(database="contractdb")
+    return _db
 
 class PlaybookMatch(BaseModel):
     id: str
@@ -31,7 +38,7 @@ class PlaybookMatch(BaseModel):
 
 async def embed(text_in: str) -> List[float]:
     """Return a single embedding vector for `text_in`."""
-    resp = await _client.embeddings.create(model=EMBED_MODEL, input=text_in)
+    resp = await _openai.embeddings.create(model=EMBED_MODEL, input=text_in)
     return resp.data[0].embedding
 
 async def lookup(
@@ -46,9 +53,7 @@ async def lookup(
 
     vec = await embed(clause_text)
 
-    db = firestore.Client(database="contractdb")
-    collection = db.collection("playbook")
-    
+    collection = _get_db().collection("playbook")
     vector_query = collection.find_nearest(
         vector_field="embedding",
         query_vector=Vector(vec),
@@ -57,18 +62,18 @@ async def lookup(
     )
 
     results = []
-    for doc in vector_query.stream():
+    async for doc in vector_query.stream():
         d = doc.to_dict()
         doc_vec = d.get("embedding")
         if doc_vec:
             try:
                 dv = doc_vec.value if hasattr(doc_vec, "value") else doc_vec
                 sim = sum(a * b for a, b in zip(vec, dv))
-            except:
+            except Exception:
                 sim = 1.0
         else:
             sim = 1.0
-            
+
         if sim >= min_similarity:
             results.append(PlaybookMatch(
                 id=doc.id,
@@ -76,7 +81,7 @@ async def lookup(
                 risk_level=d.get("risk_level", ""),
                 pattern_description=d.get("pattern_description", ""),
                 example_risky_wording=d.get("example_risky_wording"),
-                legal_reasoning=d.get("legal_reasoning", ""),
+                legal_reasoning=d.get("legal_reasoning") or "",
                 recommended_redline=d.get("recommended_redline"),
                 statute_ref=d.get("statute_ref"),
                 similarity=sim

@@ -4,9 +4,18 @@ Returns the German statutory references (BGB, SGB IV, UrhG, etc.) most
 relevant to a given clause_type. Used by clause_analyzer to ground LLM
 reasoning in authoritative legal text.
 """
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel
 from google.cloud import firestore
+
+_db: Optional[firestore.AsyncClient] = None
+_cache: Dict[str, List["StatuteRef"]] = {}
+
+def _get_db() -> firestore.AsyncClient:
+    global _db
+    if _db is None:
+        _db = firestore.AsyncClient(database="contractdb")
+    return _db
 
 class StatuteRef(BaseModel):
     paragraph: str
@@ -14,17 +23,17 @@ class StatuteRef(BaseModel):
     official_url: Optional[str] = None
 
 async def lookup(clause_type: str, **kwargs) -> List[StatuteRef]:
-    """All statute references matching `clause_type` (e.g. 'late_payment_interest')."""
+    """All statute references matching `clause_type`. Results are cached in-process."""
     if not clause_type:
         return []
 
-    db = firestore.AsyncClient(database="contractdb")
-    
-    # query collection statute_references
-    query = db.collection("statute_references").where(
+    if clause_type in _cache:
+        return _cache[clause_type]
+
+    query = _get_db().collection("statute_references").where(
         filter=firestore.FieldFilter("clause_type", "==", clause_type)
     )
-    
+
     results = []
     async for doc in query.stream():
         d = doc.to_dict()
@@ -33,4 +42,6 @@ async def lookup(clause_type: str, **kwargs) -> List[StatuteRef]:
             text_excerpt=d.get("text_excerpt", ""),
             official_url=d.get("official_url")
         ))
+
+    _cache[clause_type] = results
     return results

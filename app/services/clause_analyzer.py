@@ -12,6 +12,7 @@ It also surfaces a synthetic "rate below benchmark" finding when the
 offered rate falls beneath the p25 benchmark — even if the contract
 text does not explicitly flag it.
 """
+import asyncio
 import os
 from typing import List, Optional
 
@@ -123,7 +124,7 @@ def _clause_concerns_rate(clause: str) -> bool:
 
 async def analyze(
     extraction: ContractExtraction,
-) -> List[Finding]:
+) -> tuple[List[Finding], Optional[rate_lookup.RateBenchmark]]:
     """Run the full clause analysis over an extracted contract."""
     findings: List[Finding] = []
 
@@ -134,8 +135,8 @@ async def analyze(
         region=extraction.region,
     )
 
-    # 2. Synthetic "rate below p25" finding
-    if rate_bench and extraction.hourly_rate_eur < float(rate_bench.p25):
+    # 2. Synthetic "rate below p25" finding — skip if rate is 0 (not stated in contract)
+    if rate_bench and extraction.hourly_rate_eur > 0 and extraction.hourly_rate_eur < float(rate_bench.p25):
         findings.append(
             Finding(
                 risk="high",
@@ -159,36 +160,49 @@ async def analyze(
 
     rate_context = _build_rate_context(extraction, rate_bench)
 
-    # 3. Per-clause LLM analysis.
-    for clause in extraction.clauses:
-        matches = await playbook_lookup.lookup(clause, top_k=3)
+    clauses = extraction.clauses
 
-        statutes: List[statute_lookup.StatuteRef] = []
-        if matches:
-            statutes = await statute_lookup.lookup(matches[0].clause_type)
+    # Phase A: all playbook vector searches concurrently.
+    all_matches = await asyncio.gather(
+        *[playbook_lookup.lookup(clause, top_k=3) for clause in clauses]
+    )
 
-        clause_rate_ctx = rate_context if _clause_concerns_rate(clause) else None
+    # Phase B: statute lookups — deduplicated across clauses.
+    unique_clause_types = {
+        matches[0].clause_type
+        for matches in all_matches
+        if matches
+    }
+    await asyncio.gather(
+        *[statute_lookup.lookup(ct) for ct in unique_clause_types]
+    )
+    # Results are now in statute_lookup._cache; subsequent calls are free.
 
+    # Phase C: all LLM analyses concurrently with pre-fetched data.
+    async def _llm_safe(clause: str, matches: List[playbook_lookup.PlaybookMatch]) -> Finding:
         try:
-            finding = await _analyze_single_clause(
+            statutes = await statute_lookup.lookup(matches[0].clause_type) if matches else []
+            clause_rate_ctx = rate_context if _clause_concerns_rate(clause) else None
+            return await _analyze_single_clause(
                 clause=clause,
                 playbook_matches=matches,
                 statutes=statutes,
                 rate_context=clause_rate_ctx,
             )
-            findings.append(finding)
         except Exception as e:
-            # Graceful degradation — never let one bad clause crash the pipeline.
-            findings.append(
-                Finding(
-                    risk="low",
-                    title="Analysis error",
-                    clause=clause,
-                    body=f"This clause could not be analyzed automatically ({type(e).__name__}).",
-                    redline=None,
-                    statute=None,
-                    source="System",
-                )
+            return Finding(
+                risk="low",
+                title="Analysis error",
+                clause=clause,
+                body=f"This clause could not be analyzed automatically ({type(e).__name__}).",
+                redline=None,
+                statute=None,
+                source="System",
             )
 
-    return findings
+    clause_findings = await asyncio.gather(
+        *[_llm_safe(clause, matches) for clause, matches in zip(clauses, all_matches)]
+    )
+    findings.extend(clause_findings)
+
+    return findings, rate_bench

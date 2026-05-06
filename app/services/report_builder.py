@@ -5,12 +5,23 @@ structured JSON that the Streamlit UI expects: summary counts, the
 findings themselves, and a negotiation brief.
 """
 from datetime import date
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
 from app.services.clause_analyzer import Finding
 from app.services.ingestion import ContractExtraction
+from db.rate_lookup import RateBenchmark
+
+
+class RateBenchmarkSnapshot(BaseModel):
+    offered: float
+    p25: float
+    median: float
+    p75: float
+    skill_category: str
+    experience: str
+    source: str
 
 
 class AnalysisReport(BaseModel):
@@ -19,6 +30,7 @@ class AnalysisReport(BaseModel):
     summary: Dict[str, int]
     findings: List[Finding]
     brief: str
+    rate_benchmark: Optional[RateBenchmarkSnapshot] = None
 
 
 def _build_brief(profile: str, findings: List[Finding]) -> str:
@@ -51,7 +63,7 @@ def _build_brief(profile: str, findings: List[Finding]) -> str:
     return "\n".join(lines)
 
 
-def build(extraction: ContractExtraction, findings: List[Finding]) -> AnalysisReport:
+def build(extraction: ContractExtraction, findings: List[Finding], rate_bench: Optional[RateBenchmark] = None) -> AnalysisReport:
     """Assemble the UI-ready report."""
     summary = {
         "high": sum(1 for f in findings if f.risk == "high"),
@@ -62,8 +74,20 @@ def build(extraction: ContractExtraction, findings: List[Finding]) -> AnalysisRe
 
     profile = (
         f"{extraction.experience_level.title()} {extraction.skill_category}"
-        f" · {extraction.region or 'Germany'}"
+        f" · {extraction.region or 'Germany (nationwide)'}"
     )
+
+    bench_snapshot = None
+    if rate_bench and extraction.hourly_rate_eur >= 0:
+        bench_snapshot = RateBenchmarkSnapshot(
+            offered=extraction.hourly_rate_eur,
+            p25=float(rate_bench.p25),
+            median=float(rate_bench.median),
+            p75=float(rate_bench.p75),
+            skill_category=rate_bench.skill_category,
+            experience=rate_bench.experience,
+            source=rate_bench.source,
+        )
 
     return AnalysisReport(
         profile=profile,
@@ -71,4 +95,5 @@ def build(extraction: ContractExtraction, findings: List[Finding]) -> AnalysisRe
         summary=summary,
         findings=findings,
         brief=_build_brief(profile, findings),
+        rate_benchmark=bench_snapshot,
     )
