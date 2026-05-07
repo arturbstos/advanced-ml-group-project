@@ -1,5 +1,5 @@
 import { onAuthStateChanged, signOut, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { API_URL } from './config.js?v=3';
+import { API_URL } from './config.js?v=4';
 
 let reportModal = null;
 
@@ -28,8 +28,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 if (!authChecked) {
                     authChecked = true;
-                    await fetchAnalyses(user);
+                    await Promise.all([fetchAnalyses(user), fetchProfile(user)]);
                 }
+
+                // Refresh grid + plan usage after the embedded analyzer finishes
+                window.addEventListener('analysis-complete', async () => {
+                    loadingEl.classList.remove('hidden');
+                    loadingEl.textContent = '$ Refreshing analyses...';
+                    gridEl.innerHTML = '';
+                    emptyStateEl.classList.add('hidden');
+                    await Promise.all([fetchAnalyses(user), fetchProfile(user)]);
+                });
             });
 
             btnLogout.onclick = () => {
@@ -86,6 +95,46 @@ document.addEventListener("DOMContentLoaded", () => {
             };
         }
     }, 100);
+
+    async function fetchProfile(user) {
+        try {
+            const token = await user.getIdToken();
+            const res = await fetch(`${API_URL}/api/user/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) return;
+            const profile = await res.json();
+            renderPlanBanner(profile);
+        } catch {
+            // non-critical — silently ignore
+        }
+    }
+
+    function renderPlanBanner({ tier, analyses_this_month, monthly_limit }) {
+        const banner = document.getElementById('plan-banner');
+        const badge = document.getElementById('plan-tier-badge');
+        const usageText = document.getElementById('plan-usage-text');
+        const bar = document.getElementById('plan-usage-bar');
+        const upgradeLink = document.getElementById('plan-upgrade-link');
+
+        const COLORS = { free: '#888', pro: '#fafafa', team: '#fafafa' };
+        const BG = { free: 'rgba(255,255,255,0.04)', pro: 'rgba(255,255,255,0.1)', team: 'rgba(255,255,255,0.08)' };
+        const color = COLORS[tier] || COLORS.free;
+
+        badge.textContent = tier.toUpperCase();
+        badge.style.color = color;
+        badge.style.background = BG[tier] || BG.free;
+        badge.style.border = `1px solid ${color}`;
+
+        const pct = Math.min(analyses_this_month / monthly_limit, 1);
+        usageText.textContent = `${analyses_this_month} / ${monthly_limit === 999 ? '∞' : monthly_limit} analyses this month`;
+        bar.style.width = `${(pct * 100).toFixed(0)}%`;
+        bar.style.background = pct >= 1 ? '#ef4444' : pct >= 0.8 ? '#eab308' : color;
+
+        if (tier !== 'free') upgradeLink.style.display = 'none';
+
+        banner.style.display = 'flex';
+    }
 
     async function fetchAnalyses(user) {
         try {
@@ -253,7 +302,7 @@ function createReportModal() {
                     <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; margin-top: 20px;">
                         <h3 style="color: var(--text-main); margin-top: 0;">Negotiation Brief</h3>
                         <pre id="modal-brief" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto; margin: 0;"></pre>
-                        <button id="btn-download-modal" style="margin-top: 15px; padding: 10px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'JetBrains Mono', monospace;">↓ Download Brief</button>
+                        <button id="btn-download-modal" style="margin-top: 15px; padding: 10px 18px; background: var(--white); color: var(--black); border: 1px solid var(--white); border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'JetBrains Mono', monospace;">↓ Download Brief</button>
                     </div>
                 </div>
             </div>
@@ -338,65 +387,62 @@ function showReportModal(analysis) {
     (report.findings || []).forEach((f) => {
         const card = document.createElement('div');
         card.style.cssText = `
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 8px;
-            padding: 15px;
-            background: rgba(0,0,0,0.2);
+            padding: 18px 18px 16px;
+            background: rgba(255,255,255,0.015);
         `;
-        if (f.risk === 'high') card.style.borderLeftColor = '#ef4444';
-        else if (f.risk === 'medium') card.style.borderLeftColor = '#eab308';
-        else card.style.borderLeftColor = '#22c55e';
-        card.style.borderLeftWidth = '4px';
 
         const summary = document.createElement('div');
         summary.style.cssText = `
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
+            gap: 12px;
+            margin-bottom: 4px;
             user-select: none;
         `;
 
         const badge = document.createElement('span');
         badge.style.cssText = `
-            padding: 3px 8px;
+            padding: 3px 9px;
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.08em;
             font-family: 'JetBrains Mono', monospace;
-            min-width: 50px;
         `;
         if (f.risk === 'high') {
-            badge.style.cssText += `background: #ef4444; color: white;`;
+            badge.style.cssText += `background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3);`;
         } else if (f.risk === 'medium') {
-            badge.style.cssText += `background: #eab308; color: #000;`;
+            badge.style.cssText += `background: rgba(250,204,21,0.1); color: #facc15; border: 1px solid rgba(250,204,21,0.28);`;
         } else {
-            badge.style.cssText += `background: #22c55e; color: #000;`;
+            badge.style.cssText += `background: rgba(74,222,128,0.08); color: #4ade80; border: 1px solid rgba(74,222,128,0.28);`;
         }
         badge.textContent = f.risk;
 
         const titleSpan = document.createElement('span');
-        titleSpan.style.color = 'var(--text-main)';
-        titleSpan.style.fontWeight = '600';
+        titleSpan.style.cssText = `color: #f5f5f5; font-weight: 600; font-size: 0.95rem; font-family: 'Inter', sans-serif;`;
         titleSpan.textContent = f.title;
 
         summary.appendChild(badge);
         summary.appendChild(titleSpan);
 
         const details = document.createElement('div');
-        details.style.cssText = `
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            line-height: 1.5;
-        `;
 
         let detailsHtml = '';
-        if (f.clause) detailsHtml += `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; margin: 10px 0; font-style: italic; color: var(--text-main);">"${f.clause}"</div>`;
-        if (f.body) detailsHtml += `<p style="margin: 10px 0; color: var(--text-main);">${f.body}</p>`;
-        if (f.redline) detailsHtml += `<div style="background: rgba(34, 197, 94, 0.1); padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 3px solid #22c55e;">→ <strong>${f.redline}</strong></div>`;
-        if (f.statute) detailsHtml += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);"><strong>⚖ ${f.statute}</strong></div>`;
+        if (f.clause) {
+            detailsHtml += `<div style="background: rgba(0,0,0,0.4); padding: 10px 14px; border-radius: 4px; margin: 14px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #999; border-left: 2px solid rgba(255,255,255,0.1); line-height: 1.6;">"${f.clause}"</div>`;
+        }
+        if (f.body) {
+            detailsHtml += `<p style="margin: 14px 0; color: #ccc; font-family: 'Inter', sans-serif; font-size: 0.92rem; line-height: 1.7;">${f.body}</p>`;
+        }
+        if (f.redline) {
+            detailsHtml += `<div style="background: rgba(74,222,128,0.04); padding: 10px 14px; border-radius: 4px; margin: 12px 0; border: 1px solid rgba(74,222,128,0.18); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #4ade80; line-height: 1.6;">→ ${f.redline}</div>`;
+        }
+        if (f.statute) {
+            detailsHtml += `<div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #888;">⚖ ${f.statute}</div>`;
+        }
 
         details.innerHTML = detailsHtml;
 

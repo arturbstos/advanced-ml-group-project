@@ -19,10 +19,12 @@ const googleProvider = new GoogleAuthProvider();
 window.firebaseAuth = auth;
 
 document.addEventListener("DOMContentLoaded", () => {
-    const loginBtn = document.querySelector('.btn-login');
+    // Only the homepage's Log In button — identified by its i18n key — is the
+    // auth toggle. This avoids accidentally hijacking other `.btn-login`-styled
+    // buttons (e.g. the Account button on the dashboard).
+    const loginBtn = document.querySelector('.btn-login[data-i18n="nav.login"]');
     const modal = document.getElementById('auth-modal');
-    
-    // If no login button (e.g., on dashboard), just handle state
+
     if (!loginBtn) return;
 
     // Modal elements

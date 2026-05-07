@@ -2,7 +2,7 @@
 import os
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
@@ -121,9 +121,44 @@ async def delete_analysis(analysis_id: str, uid: str = Depends(get_current_user)
         raise HTTPException(status_code=500, detail="Failed to delete analysis")
 
 
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+@app.get("/api/user/profile")
+async def get_user_profile(uid: str = Depends(get_current_user)):
+    """Return the authenticated user's tier and monthly usage."""
+    if not uid:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    tier = await _get_user_tier(uid)
+    count = await _get_monthly_count(uid)
+    limit = TIER_LIMITS.get(tier, 1)
+    return {"tier": tier, "analyses_this_month": count, "monthly_limit": limit}
 
+
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 ANALYSIS_TIMEOUT_SECONDS = 120
+
+TIER_LIMITS = {
+    "free": 1,
+    "pro": 10,
+    "team": 999,
+}
+
+async def _get_user_tier(uid: str) -> str:
+    user_doc = await _db.collection("users").document(uid).get()
+    if not user_doc.exists:
+        return "free"
+    return user_doc.to_dict().get("tier", "free")
+
+async def _get_monthly_count(uid: str) -> int:
+    month_start = datetime(datetime.now(timezone.utc).year, datetime.now(timezone.utc).month, 1, tzinfo=timezone.utc)
+    query = (
+        _db.collection("users")
+        .document(uid)
+        .collection("analyses")
+        .where("timestamp", ">=", month_start)
+    )
+    count = 0
+    async for _ in query.stream():
+        count += 1
+    return count
 
 @app.post("/analyze")
 @limiter.limit("10/minute")
@@ -141,6 +176,15 @@ async def analyze_contract(
     """
     if not uid:
         raise HTTPException(status_code=401, detail="Authentication required to analyze contracts.")
+
+    tier = await _get_user_tier(uid)
+    limit = TIER_LIMITS.get(tier, 1)
+    count = await _get_monthly_count(uid)
+    if count >= limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Monthly limit reached ({count}/{limit} analyses on the {tier.capitalize()} plan). Upgrade to Pro for more."
+        )
 
     contents = await file.read()
 

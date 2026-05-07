@@ -1,11 +1,14 @@
-import { API_URL } from './config.js?v=3';
+import { API_URL } from './config.js?v=4';
 
 /* ─ i18n — Translation Dictionary ────────────────────────────── */
 const TRANSLATIONS = {
     en: {
         'nav.how':                'How It Works',
+        'nav.pricing':            'Pricing',
         'nav.upload':             'Upload',
         'nav.login':              'Log In',
+        'pricing.label':          '// Pricing',
+        'pricing.title':          'Simple, transparent pricing.',
         'hero.label':             '// German Freelance Contract Analyzer',
         'hero.title':             'Know every<br>risk before<br>you sign.',
         'hero.desc':              "We don't just flag issues. We show you what matters: Is it a false self-employment risk? An illegal liability cap? An unenforceable non-compete? Know why it matters and what to do about it.",
@@ -37,12 +40,25 @@ const TRANSLATIONS = {
         'results.reset':          '← Analyze another',
         'footer.tagline':         'Intelligent German freelance contract risk analysis. Not legal advice.',
         'footer.poweredby':       'Powered by',
-        'footer.legal':           '© 2025 contract.law — For educational purposes only.',
+        'footer.legal':           '© 2026 Nova School of Business and Economics — For educational purposes only.',
+        'nav.account':            'Account',
+        'nav.logout':             'Log Out',
+        'dashboard.title':        'Dashboard',
+        'dashboard.your_analyses':'Your Analyses',
+        'dashboard.upgrade':      'Upgrade plan →',
+        'dashboard.loading':      '$ Loading past analyses...',
+        'dashboard.empty.title':  'No analyses yet.',
+        'dashboard.empty.desc':   'Upload a contract above to see it here.',
+        'dashboard.new_analysis': 'New analysis.',
+        'dashboard.search':       'Search by filename...',
     },
     de: {
         'nav.how':                "So funktioniert's",
+        'nav.pricing':            'Preise',
         'nav.upload':             'Hochladen',
         'nav.login':              'Anmelden',
+        'pricing.label':          '// Preise',
+        'pricing.title':          'Einfache, transparente Preise.',
         'hero.label':             '// KI-Vertragsanalyse für Freelancer',
         'hero.title':             'Jeden Risiko<br>kennen, bevor<br>du unterschreibst.',
         'hero.desc':              'Wir zeigen dir, was wirklich wichtig ist: Droht Scheinselbstständigkeit? Ist die Haftungsklausel unwirksam? Ist das Wettbewerbsverbot durchsetzbar? Versteh das Risiko – und was du dagegen tun kannst.',
@@ -74,30 +90,50 @@ const TRANSLATIONS = {
         'results.reset':          '← Weiteren Vertrag analysieren',
         'footer.tagline':         'Intelligente Risikoanalyse für deutsche Freelancer-Verträge. Keine Rechtsberatung.',
         'footer.poweredby':       'Unterstützt von',
-        'footer.legal':           '© 2025 contract.law — Nur zu Bildungszwecken.',
+        'footer.legal':           '© 2026 Nova School of Business and Economics — Nur zu Bildungszwecken.',
+        'nav.account':            'Konto',
+        'nav.logout':             'Abmelden',
+        'dashboard.title':        'Dashboard',
+        'dashboard.your_analyses':'Deine Analysen',
+        'dashboard.upgrade':      'Plan upgraden →',
+        'dashboard.loading':      '$ Frühere Analysen werden geladen...',
+        'dashboard.empty.title':  'Noch keine Analysen.',
+        'dashboard.empty.desc':   'Lade oben einen Vertrag hoch, um ihn hier zu sehen.',
+        'dashboard.new_analysis': 'Neue Analyse.',
+        'dashboard.search':       'Nach Dateiname suchen...',
     }
 };
 
-let currentLang = 'en';
+let currentLang = (localStorage.getItem('lang') === 'de') ? 'de' : 'en';
 
 function applyLang(lang) {
     currentLang = lang;
+    try { localStorage.setItem('lang', lang); } catch {}
     const t = TRANSLATIONS[lang];
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (t[key] !== undefined) el.innerHTML = t[key];
+        if (t[key] === undefined) return;
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.placeholder = t[key];
+        } else {
+            el.innerHTML = t[key];
+        }
     });
-    document.getElementById('lang-toggle').textContent = lang === 'en' ? 'DE' : 'EN';
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.textContent = lang === 'en' ? 'DE' : 'EN';
     document.documentElement.lang = lang;
 }
 
-document.getElementById('lang-toggle').addEventListener('click', () => {
+document.getElementById('lang-toggle')?.addEventListener('click', () => {
     applyLang(currentLang === 'en' ? 'de' : 'en');
 });
 
+// Apply persisted language to all data-i18n elements on every page load.
+applyLang(currentLang);
+
 /* ─ Scroll detection for pill-nav shadow ─ */
 window.addEventListener('scroll', () => {
-    document.getElementById('pill-nav').classList.toggle('scrolled', window.scrollY > 20);
+    document.getElementById('pill-nav')?.classList.toggle('scrolled', window.scrollY > 20);
 });
 
 /* ─ DOM refs ─ */
@@ -151,15 +187,22 @@ async function handleFile(file) {
         const response = await fetch(`${API_URL}/analyze`, { method: 'POST', body: formData, headers: headers });
         if (!response.ok) {
             const err = await response.json().catch(() => ({ detail: response.statusText }));
-            throw new Error(err.detail || 'Analysis failed');
+            const e = new Error(err.detail || 'Analysis failed');
+            e.status = response.status;
+            throw e;
         }
         const data = await response.json();
         renderResults(data);
+        window.dispatchEvent(new CustomEvent('analysis-complete'));
     } catch (error) {
-        const msg = error.message.toLowerCase().includes('scanned')
-            ? 'Scanned PDFs are not supported. Please upload a text-based PDF (not a scan or image).'
-            : `Error: ${error.message}`;
-        alert(msg);
+        if (error.status === 429) {
+            const go = confirm(`${error.message}\n\nView pricing plans?`);
+            if (go) document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+        } else if (error.message.toLowerCase().includes('scanned')) {
+            alert('Scanned PDFs are not supported. Please upload a text-based PDF (not a scan or image).');
+        } else {
+            alert(`Error: ${error.message}`);
+        }
         uploadState.classList.remove('hidden');
     } finally {
         loading.classList.add('hidden');
@@ -299,7 +342,7 @@ btnDownloadPdf.addEventListener('click', () => {
     // Header
     doc.setFillColor(15, 15, 15);
     doc.rect(0, 0, 210, 297, 'F');
-    addLine('contract.law', { size: 18, bold: true, color: [245, 245, 245] });
+    addLine('veritas', { size: 18, bold: true, color: [245, 245, 245] });
     addLine(`German Freelance Contract Analysis  ·  ${currentReport.date}`, { size: 9, color: [100, 100, 100] });
     addLine(currentReport.profile, { size: 9, color: [120, 120, 120] });
     y += 4;

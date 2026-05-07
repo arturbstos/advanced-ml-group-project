@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — contract.law</title>
+    <title>Dashboard — veritas</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=7">
     <style>
         .dashboard-container {
             max-width: 1000px;
@@ -102,24 +102,116 @@
     <nav class="pill-nav" id="pill-nav">
         <div class="nav-left">
             <a href="index.html" class="nav-logo" style="text-decoration: none;">
-                <span class="logo-icon">⚖</span>
-                <span class="mono beta-tag">contract.law</span>
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3v18"/>
+                    <path d="M7 21h10"/>
+                    <path d="M3 7h4c2 0 4-1 5-2 1 1 3 2 5 2h4"/>
+                    <path d="M2 16l3-7 3 7c-1 1.5-5 1.5-6 0Z"/>
+                    <path d="M16 16l3-7 3 7c-1 1.5-5 1.5-6 0Z"/>
+                </svg>
+                <span class="mono beta-tag">veritas</span>
             </a>
         </div>
         <div class="nav-right">
-            <a href="index.html" class="nav-link mono">New Analysis</a>
-            <button class="nav-btn btn-login mono" id="btn-account" style="background:transparent;border:1px solid rgba(255,255,255,0.15);margin-right:6px;">Account</button>
-            <button class="nav-btn btn-login mono" id="btn-logout">Log Out</button>
+            <button class="nav-btn btn-lang mono" id="lang-toggle" aria-label="Switch language">DE</button>
+            <button class="nav-btn mono" id="btn-account" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--white);margin-right:6px;" data-i18n="nav.account">Account</button>
+            <button class="nav-btn btn-login mono" id="btn-logout" data-i18n="nav.logout">Log Out</button>
         </div>
     </nav>
 
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <h1>Your Analyses</h1>
+            <h1 data-i18n="dashboard.title">Dashboard</h1>
         </div>
 
+        <!-- Plan usage banner -->
+        <div id="plan-banner" style="display:none;align-items:center;justify-content:space-between;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:14px 20px;margin-bottom:24px;gap:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <span id="plan-tier-badge" class="mono" style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;padding:4px 10px;border-radius:9999px;text-transform:uppercase;"></span>
+                <div>
+                    <div id="plan-usage-text" class="mono" style="font-size:0.82rem;color:#f5f5f5;"></div>
+                    <div id="plan-usage-bar-wrap" style="margin-top:6px;height:4px;background:rgba(255,255,255,0.08);border-radius:9999px;width:180px;overflow:hidden;">
+                        <div id="plan-usage-bar" style="height:100%;border-radius:9999px;transition:width 0.4s;"></div>
+                    </div>
+                </div>
+            </div>
+            <a id="plan-upgrade-link" href="index.html#pricing" class="mono" style="font-size:0.78rem;color:var(--white);text-decoration:none;border:1px solid rgba(255,255,255,0.2);padding:6px 14px;border-radius:9999px;white-space:nowrap;transition:all 0.2s;" data-i18n="dashboard.upgrade">Upgrade plan →</a>
+        </div>
+
+        <!-- Analyzer Terminal (embedded) -->
+        <div class="terminal-window" style="margin-bottom:48px;">
+            <div class="window-bar">
+                <div class="window-dots">
+                    <span class="dot red"></span>
+                    <span class="dot yellow"></span>
+                    <span class="dot green"></span>
+                </div>
+                <span class="window-title mono">veritas — analyzer</span>
+            </div>
+            <div class="terminal-body">
+                <!-- Upload state -->
+                <div id="upload-state">
+                    <h2 class="terminal-h2" data-i18n="dashboard.new_analysis">New analysis.</h2>
+                    <div id="drop-zone" class="drop-zone">
+                        <span class="upload-icon">📄</span>
+                        <p class="mono" data-i18n="analyzer.drop">Drop your PDF contract here</p>
+                        <input type="file" id="file-input" accept=".pdf" hidden>
+                        <button class="btn-browse mono" onclick="document.getElementById('file-input').click()" data-i18n="analyzer.browse">Browse files</button>
+                    </div>
+                </div>
+
+                <!-- Loading state -->
+                <div id="loading" class="hidden">
+                    <div class="loading-inner">
+                        <div class="terminal-loader">
+                            <div class="loader-lines">
+                                <div class="loader-line mono" data-i18n="loading.l1">$ Loading contract...</div>
+                                <div class="loader-line mono" data-i18n="loading.l2">$ Extracting clauses via GPT-4o...</div>
+                                <div class="loader-line mono" data-i18n="loading.l3">$ Running vector similarity search...</div>
+                                <div class="loader-line mono typing" data-i18n="loading.l4">$ Synthesizing risk report...</div>
+                            </div>
+                            <div class="spinner-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results state -->
+                <div id="results-section" class="hidden">
+                    <div class="results-header">
+                        <h2 class="terminal-h2" data-i18n="results.heading">Analysis complete.</h2>
+                        <div class="summary-pills" id="summary-pills"></div>
+                    </div>
+                    <div id="rate-benchmark-section" class="hidden" style="margin-bottom:2rem;padding:1.25rem;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+                        <div class="mono dim" style="font-size:0.75rem;margin-bottom:0.75rem;">// rate benchmark</div>
+                        <div id="rate-benchmark-label" class="mono" style="font-size:0.85rem;margin-bottom:0.75rem;color:var(--white);"></div>
+                        <div style="position:relative;height:28px;background:rgba(255,255,255,0.05);border-radius:6px;overflow:hidden;">
+                            <div id="rate-bar-p25"   style="position:absolute;top:0;bottom:0;background:rgba(239,68,68,0.25);"></div>
+                            <div id="rate-bar-mid"   style="position:absolute;top:0;bottom:0;background:rgba(234,179,8,0.25);"></div>
+                            <div id="rate-bar-p75"   style="position:absolute;top:0;bottom:0;background:rgba(34,197,94,0.2);"></div>
+                            <div id="rate-bar-offer" style="position:absolute;top:4px;bottom:4px;width:3px;background:#fff;border-radius:2px;"></div>
+                        </div>
+                        <div id="rate-benchmark-ticks" class="mono dim" style="display:flex;justify-content:space-between;font-size:0.7rem;margin-top:0.4rem;"></div>
+                    </div>
+                    <div class="findings-list" id="findings-container"></div>
+                    <div class="brief-section">
+                        <div class="brief-header">
+                            <span class="mono dim">// negotiation_brief.txt</span>
+                            <div style="display:flex;gap:8px;">
+                                <button id="btn-download" class="btn-ghost mono">↓ TXT</button>
+                                <button id="btn-download-pdf" class="btn-ghost mono">↓ PDF</button>
+                            </div>
+                        </div>
+                        <pre id="negotiation-brief" class="mono"></pre>
+                    </div>
+                    <button id="btn-reset" class="btn-ghost mono" style="margin-top:2rem;" data-i18n="results.reset">← Analyze another</button>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="font-size:1.5rem;margin-bottom:20px;color:var(--white);" data-i18n="dashboard.your_analyses">Your Analyses</h2>
+
         <div id="dashboard-controls" class="hidden" style="display:none;gap:12px;margin-bottom:24px;align-items:center;flex-wrap:wrap;">
-            <input id="search-input" type="text" placeholder="Search by filename..." class="mono" style="flex:1;min-width:200px;padding:8px 14px;background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-main);font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;">
+            <input id="search-input" type="text" placeholder="Search by filename..." data-i18n="dashboard.search" class="mono" style="flex:1;min-width:200px;padding:8px 14px;background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-main);font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;">
             <select id="filter-risk" class="mono" style="padding:8px 14px;background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-main);font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;cursor:pointer;">
                 <option value="all">All Risk Levels</option>
                 <option value="high">Has HIGH findings</option>
@@ -128,14 +220,13 @@
             </select>
         </div>
 
-        <div id="dashboard-loading" class="mono">
+        <div id="dashboard-loading" class="mono" data-i18n="dashboard.loading">
             $ Loading past analyses...
         </div>
-        
+
         <div id="empty-state" class="empty-state hidden">
-            <h3 style="color: var(--text-main); margin-bottom: 10px;">No analyses found.</h3>
-            <p style="color: var(--text-muted); margin-bottom: 20px;">Upload a freelance contract to see it here.</p>
-            <a href="index.html" class="btn-primary mono" style="text-decoration: none; display: inline-block;">Analyze Contract →</a>
+            <h3 style="color: var(--text-main); margin-bottom: 10px;" data-i18n="dashboard.empty.title">No analyses yet.</h3>
+            <p style="color: var(--text-muted); margin-bottom: 0;" data-i18n="dashboard.empty.desc">Upload a contract above to see it here.</p>
         </div>
 
         <div id="analysis-grid" class="analysis-grid"></div>
@@ -145,7 +236,7 @@
     <footer class="site-footer">
         <div class="footer-grid">
             <div class="footer-brand">
-                <span class="mono">contract.law</span>
+                <span class="mono">veritas</span>
                 <p class="mono dim">Intelligent German freelance contract risk analysis. Not legal advice.</p>
             </div>
             <div class="footer-links">
@@ -158,7 +249,7 @@
                 </div>
             </div>
         </div>
-        <div class="footer-bottom mono dim">© 2025 contract.law — For educational purposes only.</div>
+        <div class="footer-bottom mono dim">© 2026 Nova School of Business and Economics — For educational purposes only.</div>
     </footer>
 
     <!-- Account Management Modal -->
@@ -172,7 +263,7 @@
                 <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;margin-bottom:20px;">
                     <h3 class="mono" style="color:#aaa;font-size:0.9rem;margin-bottom:12px;">Change Password</h3>
                     <input id="new-password" type="password" placeholder="New password (min 6 chars)" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#f5f5f5;font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;margin-bottom:8px;">
-                    <button id="btn-change-password" class="mono" style="width:100%;padding:10px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;">Update Password</button>
+                    <button id="btn-change-password" class="mono" style="width:100%;padding:10px;background:var(--white);border:1px solid var(--white);color:var(--black);border-radius:8px;cursor:pointer;font-weight:600;">Update Password</button>
                     <p id="password-msg" class="mono" style="font-size:0.8rem;margin-top:8px;display:none;"></p>
                 </div>
 
@@ -186,7 +277,9 @@
     </div>
 
     <!-- Use auth.js to enforce login state -->
-    <script type="module" src="auth.js?v=2"></script>
-    <script type="module" src="dashboard.js?v=2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script type="module" src="auth.js?v=4"></script>
+    <script type="module" src="app.js?v=6"></script>
+    <script type="module" src="dashboard.js?v=6"></script>
 </body>
 </html>
