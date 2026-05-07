@@ -18,12 +18,18 @@ from typing import List, Optional
 
 from openai import AsyncOpenAI
 from pydantic import BaseModel
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.services.ingestion import ContractExtraction
 from db import playbook_lookup, rate_lookup, statute_lookup
 
 _LLM_MODEL = "gpt-4o-mini"
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+@retry(wait=wait_exponential(min=1, max=4), stop=stop_after_attempt(3), reraise=True)
+async def _parse_with_retry(**kwargs):
+    return await _client.beta.chat.completions.parse(**kwargs)
 
 _RATE_KEYWORDS = (
     "vergütung", "honorar", "stundensatz", "stundenhonorar", "euro",
@@ -89,7 +95,7 @@ async def _analyze_single_clause(
         f"RATE CONTEXT:\n{rate_context or '(not applicable)'}\n"
     )
 
-    resp = await _client.beta.chat.completions.parse(
+    resp = await _parse_with_retry(
         model=_LLM_MODEL,
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},

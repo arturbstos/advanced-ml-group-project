@@ -31,6 +31,7 @@ const TRANSLATIONS = {
         'analyzer.heading':       'Analyze your<br>contract.',
         'analyzer.drop':          'Drop your PDF contract here',
         'analyzer.browse':        'Browse files',
+        'analyzer.privacy':       'Your contract is sent to OpenAI for analysis and is not stored by veritas. See our Privacy Policy.',
         'loading.l1':             '$ Loading contract...',
         'loading.l2':             '$ Extracting clauses via GPT-4o...',
         'loading.l3':             '$ Running vector similarity search...',
@@ -81,6 +82,7 @@ const TRANSLATIONS = {
         'analyzer.heading':       'Deinen Vertrag<br>analysieren.',
         'analyzer.drop':          'PDF-Vertrag hier ablegen',
         'analyzer.browse':        'Dateien durchsuchen',
+        'analyzer.privacy':       'Dein Vertrag wird zur Analyse an OpenAI gesendet und nicht von veritas gespeichert. Siehe unsere Datenschutzerklärung.',
         'loading.l1':             '$ Vertrag wird geladen...',
         'loading.l2':             '$ Klauseln werden via GPT-4o extrahiert...',
         'loading.l3':             '$ Vektorähnlichkeitssuche läuft...',
@@ -231,8 +233,19 @@ function renderRateBenchmark(bench) {
     const status = offered < p25 ? '⚠ Below p25' : offered < median ? 'Below median' : offered < p75 ? 'Above median' : '✓ Above p75';
     document.getElementById('rate-benchmark-label').innerHTML =
         `${experience} ${skill_category} · Offered: <strong style="color:${offered < p25 ? '#ef4444' : offered < median ? '#eab308' : '#22c55e'}">€${offered}/h</strong> &nbsp;|&nbsp; ${status} &nbsp;(${source})`;
-    document.getElementById('rate-benchmark-ticks').innerHTML =
+    const ticks = document.getElementById('rate-benchmark-ticks');
+    ticks.innerHTML =
         `<span>€${p25} p25</span><span>€${median} median</span><span>€${p75} p75</span>`;
+
+    let footnote = document.getElementById('rate-benchmark-footnote');
+    if (!footnote) {
+        footnote = document.createElement('div');
+        footnote.id = 'rate-benchmark-footnote';
+        footnote.className = 'mono dim';
+        footnote.style.cssText = 'font-size:0.65rem;margin-top:0.4rem;line-height:1.5;';
+        footnote.textContent = 'p25/p75 modeled ±15% around experience-adjusted median (Freelancer-Kompass 2025). Not observed percentiles.';
+        ticks.after(footnote);
+    }
 
     section.classList.remove('hidden');
 }
@@ -261,11 +274,14 @@ function renderResults(data) {
         const card = document.createElement('div');
         card.className = `finding-card ${f.risk}`;
 
+        const isUncurated = f.source === 'System' || f.title === 'Analysis error';
+
         const summary = document.createElement('div');
         summary.className = 'finding-summary';
         summary.innerHTML = `
             <span class="risk-badge ${f.risk}">${f.risk}</span>
             <span class="finding-title-text">${f.title}</span>
+            ${isUncurated ? '<span class="mono dim" style="font-size:0.7rem;flex-shrink:0;">⚠ No curated match — AI-generated</span>' : ''}
             <span class="finding-toggle mono">▶</span>
         `;
 

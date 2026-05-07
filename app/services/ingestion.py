@@ -2,6 +2,7 @@ import pdfplumber
 import os
 from openai import AsyncOpenAI
 from pydantic import BaseModel
+from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import List, Optional
 
 # Define schema for extraction based on Technical Architecture Step 1
@@ -14,6 +15,11 @@ class ContractExtraction(BaseModel):
     clauses: List[str]
 
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+@retry(wait=wait_exponential(min=1, max=4), stop=stop_after_attempt(3), reraise=True)
+async def _parse_with_retry(**kwargs):
+    return await client.beta.chat.completions.parse(**kwargs)
 
 async def process_contract(file_path: str) -> ContractExtraction:
     # 1. Raw Text Extraction
@@ -42,7 +48,7 @@ Strict Extraction Rules:
 
     # 2. Structured Extraction (using GPT-4o-mini for cost-efficiency)
     # per architecture recommendation [cite: 262]
-    response = await client.beta.chat.completions.parse(
+    response = await _parse_with_retry(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},

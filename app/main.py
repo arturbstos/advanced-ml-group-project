@@ -45,9 +45,22 @@ app = FastAPI(title="German Freelancer Contract Analyzer")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+if os.getenv("ENV") == "development":
+    _ALLOWED_ORIGINS = ["*"]
+else:
+    _ALLOWED_ORIGINS = [
+        "https://veritas-43d91.web.app",
+        "https://veritas-43d91.firebaseapp.com",
+    ]
+
+# Always allow any localhost origin so local dev keeps working without
+# needing to remember to set ENV=development.
+_LOCAL_ORIGIN_REGEX = r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all origins for local web development
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_origin_regex=_LOCAL_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

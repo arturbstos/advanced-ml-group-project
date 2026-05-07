@@ -8,6 +8,14 @@ from typing import Optional
 from pydantic import BaseModel
 from google.cloud import firestore
 
+_db: Optional[firestore.AsyncClient] = None
+
+def _get_db() -> firestore.AsyncClient:
+    global _db
+    if _db is None:
+        _db = firestore.AsyncClient(database="contractdb")
+    return _db
+
 _EXPERIENCE_LEVELS = ("junior", "mid", "senior")
 
 CANONICAL_SKILL_CATEGORIES = (
@@ -112,8 +120,7 @@ async def lookup(
         return None
 
     canonical_skill = _normalize_skill_category(skill_category)
-    db = firestore.AsyncClient(database="contractdb")
-    rates_ref = db.collection("rate_benchmarks")
+    rates_ref = _get_db().collection("rate_benchmarks")
 
     if region:
         query = rates_ref.where(

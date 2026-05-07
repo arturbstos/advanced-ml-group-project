@@ -184,7 +184,7 @@
                             <div class="pricing-role mono dim">Active solo freelancer</div>
                         </div>
                     </div>
-                    <button class="pricing-action pricing-action-pro mono" onclick="alert('Pro plan coming soon. Contact us at hello@veritas.law')" aria-label="Upgrade to Pro">→</button>
+                    <a href="mailto:hello@veritas.law?subject=Pro%20Plan%20Interest" class="pricing-action pricing-action-pro mono" aria-label="Upgrade to Pro">→</a>
                 </footer>
             </article>
 
@@ -213,7 +213,7 @@
                             <div class="pricing-role mono dim">Steuerberater &amp; agencies</div>
                         </div>
                     </div>
-                    <button class="pricing-action mono" onclick="alert('Contact us at hello@veritas.law for Team access.')" aria-label="Contact us">→</button>
+                    <a href="mailto:hello@veritas.law?subject=Team%20Plan%20Inquiry" class="pricing-action mono" aria-label="Contact us">→</a>
                 </footer>
             </article>
 
@@ -243,6 +243,7 @@
                         <p class="mono" data-i18n="analyzer.drop">Drop your PDF contract here</p>
                         <input type="file" id="file-input" accept=".pdf" hidden>
                         <button class="btn-browse mono" onclick="document.getElementById('file-input').click()" data-i18n="analyzer.browse">Browse files</button>
+                        <p class="mono" style="font-size:0.72rem;margin-top:1.5rem;line-height:1.6;color:#888;" data-i18n="analyzer.privacy">Your contract is sent to OpenAI for analysis and is not stored by veritas. See our Privacy Policy.</p>
                     </div>
                 </div>
 
@@ -340,6 +341,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module" src="auth.js?v=4"></script>
-    <script type="module" src="app.js?v=6"></script>
+    <script type="module" src="app.js?v=7"></script>
 </body>
 </html>

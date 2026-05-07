@@ -65,9 +65,6 @@
 --                    custom   -> team-curated rule with no single primary
 --                                source; reasoning explains derivation
 --
---  An integrity script (scripts/check_playbook.py — TODO) will assert in CI
---  that every row has non-empty statute_ref, source_url, source_type within
---  the enum, and risk_level non-null. Adding it is the next step.
 -- ============================================================================
 
 INSERT INTO playbook (
@@ -898,9 +895,7 @@ ON CONFLICT (id) DO UPDATE SET
     END;
 
 -- ============================================================================
--- Sanity check: confirm 66 rows are present after seed.
--- This is a hint, not a hard assertion; the CI integrity script
--- (scripts/check_playbook.py — TODO) is the authoritative gate.
+-- Sanity check: confirm 66 rows are present after seed. Run manually.
 -- ============================================================================
 -- Run manually:  SELECT COUNT(*) FROM playbook;       -- expect 66
 --                SELECT COUNT(*) FROM playbook
