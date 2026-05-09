@@ -217,10 +217,10 @@ async def analyze_contract(
         try:
             async def _run_pipeline():
                 try:
-                    extraction = await process_contract(temp_path)
+                    extraction, clauses = await process_contract(temp_path)
                 except ValueError as e:
                     raise HTTPException(status_code=400, detail=str(e))
-                findings, rate_bench = await analyze_clauses(extraction)
+                findings, rate_bench = await analyze_clauses(extraction, clauses)
                 return build_report(extraction, findings, rate_bench)
 
             report = await asyncio.wait_for(_run_pipeline(), timeout=ANALYSIS_TIMEOUT_SECONDS)

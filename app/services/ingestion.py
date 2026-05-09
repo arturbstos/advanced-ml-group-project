@@ -1,21 +1,56 @@
-import pdfplumber
 import os
+import re
+
+import pdfplumber
 from google.cloud import documentai
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from app.services.redaction import redact_text
 
-# Define schema for extraction based on Technical Architecture Step 1
+# Metadata-only schema. Clauses are split deterministically in Python
+# (see chunk_contract_text) so the LLM never has the chance to subtly
+# rewrite the legal text.
 class ContractExtraction(BaseModel):
     skill_category: str
     region: Optional[str]
     experience_level: str
     hourly_rate_eur: float
     payment_terms_days: int
-    clauses: List[str]
+
+
+# Split before paragraph breaks OR § markers. The lookahead on § keeps
+# the §-prefix attached to its section.
+_CLAUSE_SPLIT = re.compile(r"\n\s*\n+|(?=§)")
+_MIN_CHUNK_LEN = 50
+
+
+def chunk_contract_text(text: str) -> List[str]:
+    """Split contract text into clause-sized chunks deterministically.
+
+    No LLM is involved — output is verbatim source text grouped into
+    units large enough for meaningful embedding (>= 50 chars) but small
+    enough to address individually. Fragments shorter than the floor
+    are merged into the preceding chunk so we never embed
+    "§ 1" or "Definitions." as a standalone vector.
+    """
+    if not text or not text.strip():
+        return []
+
+    raw = _CLAUSE_SPLIT.split(text.strip())
+
+    chunks: List[str] = []
+    for piece in raw:
+        piece = piece.strip()
+        if not piece:
+            continue
+        if chunks and len(piece) < _MIN_CHUNK_LEN:
+            chunks[-1] = chunks[-1] + " " + piece
+        else:
+            chunks.append(piece)
+    return chunks
 
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -60,7 +95,14 @@ async def extract_text_with_doc_ai(file_path: str) -> str:
     result = await docai_client.process_document(request=request)
     return result.document.text or ""
 
-async def process_contract(file_path: str) -> ContractExtraction:
+async def process_contract(file_path: str) -> Tuple[ContractExtraction, List[str]]:
+    """Return (metadata, clauses).
+
+    `metadata` is the LLM-extracted ContractExtraction (rates, region,
+    skill category, etc). `clauses` is a list of verbatim text chunks
+    produced by `chunk_contract_text` — the LLM does NOT touch these
+    so legal text reaches the playbook vector search byte-for-byte.
+    """
     # 1. Raw Text Extraction
     text = ""
     with pdfplumber.open(file_path) as pdf:
@@ -90,26 +132,28 @@ async def process_contract(file_path: str) -> ContractExtraction:
     # OpenAI call. Applies equally to OCR-derived text.
     text = await redact_text(text)
 
+    # 2. Deterministic clause chunking — no LLM rewriting risk.
+    clauses = chunk_contract_text(text)
+
+    # 3. Metadata-only LLM extraction (no clauses field — chunks already exist).
     system_prompt = """You are an expert legal AI assistant specialized in analyzing German freelancer contracts.
-Your task is to extract structured data from the provided contract text according to the schema.
+Your task is to extract structured METADATA from the provided contract text according to the schema.
 
 Strict Extraction Rules:
-- clauses: Split the contract into individual clauses. Extract all clause-level provisions VERBATIM (do not paraphrase). There should be one meaningful legal provision per item in the list. This is critical for downstream vector search.
 - hourly_rate_eur: Extract the hourly rate and return it as a float in EUR.
-- experience_level: Normalize the freelancer's experience level to exactly one of the following: "junior", "mid", or "senior".
+- experience_level: Normalize the freelancer's experience level to exactly one of: "junior", "mid", or "senior".
 - region: Infer the region from city or state mentions. If no region can be inferred, leave it null.
 - skill_category: Extract the primary skill category of the freelancer.
 - payment_terms_days: Extract the payment terms (in days) as an integer.
 """
 
-    # 2. Structured Extraction (using GPT-4o-mini for cost-efficiency)
-    # per architecture recommendation [cite: 262]
     response = await _parse_with_retry(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Please extract the contract terms from the following text. IMPORTANT: You must extract all clause-level provisions VERBATIM (not paraphrased) so that downstream vector search over the playbook works correctly.\n\n{text}"}
+            {"role": "user", "content": f"Extract the contract metadata from the following text:\n\n{text}"},
         ],
         response_format=ContractExtraction,
     )
-    return response.choices[0].message.parsed
+    metadata: ContractExtraction = response.choices[0].message.parsed
+    return metadata, clauses

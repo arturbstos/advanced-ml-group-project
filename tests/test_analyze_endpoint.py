@@ -87,17 +87,19 @@ def patched_app(monkeypatch):
     from app.services.ingestion import ContractExtraction
     from app.services.clause_analyzer import Finding
 
-    async def fake_process_contract(_path: str) -> ContractExtraction:
-        return ContractExtraction(
-            skill_category="Software Development",
-            region="Berlin",
-            experience_level="mid",
-            hourly_rate_eur=80.0,
-            payment_terms_days=30,
-            clauses=["Sample clause text for the test."],
+    async def fake_process_contract(_path: str):
+        return (
+            ContractExtraction(
+                skill_category="Software Development",
+                region="Berlin",
+                experience_level="mid",
+                hourly_rate_eur=80.0,
+                payment_terms_days=30,
+            ),
+            ["Sample clause text for the test."],
         )
 
-    async def fake_analyze_clauses(_extraction):
+    async def fake_analyze_clauses(_extraction, _clauses):
         finding = Finding(
             risk="medium",
             title="Sample finding",

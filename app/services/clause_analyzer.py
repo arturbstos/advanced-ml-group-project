@@ -130,8 +130,14 @@ def _clause_concerns_rate(clause: str) -> bool:
 
 async def analyze(
     extraction: ContractExtraction,
+    clauses: List[str],
 ) -> tuple[List[Finding], Optional[rate_lookup.RateBenchmark]]:
-    """Run the full clause analysis over an extracted contract."""
+    """Run the full clause analysis over an extracted contract.
+
+    `clauses` is the list of verbatim chunks produced by
+    `ingestion.chunk_contract_text` — analysis embeds and reasons over
+    these exact strings, not LLM-paraphrased copies.
+    """
     findings: List[Finding] = []
 
     # 1. Rate benchmark — looked up once, reused across rate-related clauses.
@@ -165,8 +171,6 @@ async def analyze(
         )
 
     rate_context = _build_rate_context(extraction, rate_bench)
-
-    clauses = extraction.clauses
 
     # Phase A: all playbook vector searches concurrently.
     all_matches = await asyncio.gather(
