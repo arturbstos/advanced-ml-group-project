@@ -20,3 +20,6 @@ de_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/de
 firebase-admin==6.5.0
 google-cloud-firestore>=2.27.0
 slowapi
+
+# Cloud OCR fallback for scanned PDFs
+google-cloud-documentai

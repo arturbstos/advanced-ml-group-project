@@ -1,5 +1,6 @@
 import pdfplumber
 import os
+from google.cloud import documentai
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -23,6 +24,42 @@ client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 async def _parse_with_retry(**kwargs):
     return await client.beta.chat.completions.parse(**kwargs)
 
+
+async def extract_text_with_doc_ai(file_path: str) -> str:
+    """OCR fallback for scanned PDFs using a generic Google Cloud
+    Document AI processor. Reads PROJECT_ID / LOCATION / PROCESSOR_ID
+    from the environment.
+    """
+    project_id = os.getenv("PROJECT_ID")
+    location = os.getenv("LOCATION")
+    processor_id = os.getenv("PROCESSOR_ID")
+    if not (project_id and location and processor_id):
+        raise RuntimeError(
+            "Document AI OCR fallback is not configured. Set PROJECT_ID, "
+            "LOCATION, and PROCESSOR_ID in the environment."
+        )
+
+    # Document AI requires a region-specific endpoint (e.g. eu-documentai...)
+    client_options = {"api_endpoint": f"{location}-documentai.googleapis.com"}
+    docai_client = documentai.DocumentProcessorServiceAsyncClient(
+        client_options=client_options
+    )
+
+    name = docai_client.processor_path(project_id, location, processor_id)
+
+    with open(file_path, "rb") as f:
+        content = f.read()
+
+    request = documentai.ProcessRequest(
+        name=name,
+        raw_document=documentai.RawDocument(
+            content=content,
+            mime_type="application/pdf",
+        ),
+    )
+    result = await docai_client.process_document(request=request)
+    return result.document.text or ""
+
 async def process_contract(file_path: str) -> ContractExtraction:
     # 1. Raw Text Extraction
     text = ""
@@ -34,10 +71,23 @@ async def process_contract(file_path: str) -> ContractExtraction:
 
     text = text.strip()
     if not text:
-        raise ValueError("Scanned PDF detected — only text-based PDFs are supported. Please use a digitally-created PDF.")
+        # pdfplumber returned nothing — most likely a scanned PDF. Fall back
+        # to Google Cloud Document AI OCR before giving up on the user.
+        try:
+            text = (await extract_text_with_doc_ai(file_path)).strip()
+        except Exception as e:
+            raise ValueError(
+                "Could not extract text from this PDF. The document appears "
+                f"to be scanned and the OCR fallback failed: {type(e).__name__}: {e}"
+            )
+        if not text:
+            raise ValueError(
+                "OCR returned empty text — the PDF may be unreadable. "
+                "Please upload a clearer scan or a digitally-created PDF."
+            )
 
     # GDPR: strip PII (names, orgs, locations, IBANs) on-device before any
-    # OpenAI call. The LLM only ever sees redacted contract text.
+    # OpenAI call. Applies equally to OCR-derived text.
     text = await redact_text(text)
 
     system_prompt = """You are an expert legal AI assistant specialized in analyzing German freelancer contracts.
