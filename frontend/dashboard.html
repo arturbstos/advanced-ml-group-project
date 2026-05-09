@@ -155,6 +155,13 @@
                 <!-- Upload state -->
                 <div id="upload-state">
                     <h2 class="terminal-h2" data-i18n="dashboard.new_analysis">New analysis.</h2>
+                    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;font-size:0.8rem;">
+                        <label for="languageSelect" class="mono dim" data-i18n="analyzer.lang_label">Report language:</label>
+                        <select id="languageSelect" class="mono" style="background:rgba(0,0,0,0.4);border:1px solid var(--border);color:var(--white);padding:0.4rem 0.7rem;border-radius:4px;font-family:var(--font-mono);font-size:0.78rem;cursor:pointer;outline:none;">
+                            <option value="de">Deutsch</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
                     <div id="drop-zone" class="drop-zone">
                         <span class="upload-icon">📄</span>
                         <p class="mono" data-i18n="analyzer.drop">Drop your PDF contract here</p>
@@ -283,7 +290,7 @@
     <!-- Use auth.js to enforce login state -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module" src="auth.js?v=4"></script>
-    <script type="module" src="app.js?v=7"></script>
-    <script type="module" src="dashboard.js?v=6"></script>
+    <script type="module" src="app.js?v=9"></script>
+    <script type="module" src="dashboard.js?v=7"></script>
 </body>
 </html>

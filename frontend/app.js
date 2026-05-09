@@ -32,6 +32,7 @@ const TRANSLATIONS = {
         'analyzer.drop':          'Drop your PDF contract here',
         'analyzer.browse':        'Browse files',
         'analyzer.privacy':       'Your contract is sent to OpenAI for analysis and is not stored by veritas. See our Privacy Policy.',
+        'analyzer.lang_label':    'Report language:',
         'loading.l1':             '$ Loading contract...',
         'loading.l2':             '$ Extracting clauses via GPT-4o...',
         'loading.l3':             '$ Running vector similarity search...',
@@ -83,6 +84,7 @@ const TRANSLATIONS = {
         'analyzer.drop':          'PDF-Vertrag hier ablegen',
         'analyzer.browse':        'Dateien durchsuchen',
         'analyzer.privacy':       'Dein Vertrag wird zur Analyse an OpenAI gesendet und nicht von veritas gespeichert. Siehe unsere Datenschutzerklärung.',
+        'analyzer.lang_label':    'Berichtssprache:',
         'loading.l1':             '$ Vertrag wird geladen...',
         'loading.l2':             '$ Klauseln werden via GPT-4o extrahiert...',
         'loading.l3':             '$ Vektorähnlichkeitssuche läuft...',
@@ -123,11 +125,17 @@ function applyLang(lang) {
     });
     const toggle = document.getElementById('lang-toggle');
     if (toggle) toggle.textContent = lang === 'en' ? 'DE' : 'EN';
+    const langSelect = document.getElementById('languageSelect');
+    if (langSelect && langSelect.value !== lang) langSelect.value = lang;
     document.documentElement.lang = lang;
 }
 
 document.getElementById('lang-toggle')?.addEventListener('click', () => {
     applyLang(currentLang === 'en' ? 'de' : 'en');
+});
+
+document.getElementById('languageSelect')?.addEventListener('change', (e) => {
+    applyLang(e.target.value);
 });
 
 // Apply persisted language to all data-i18n elements on every page load.
@@ -178,6 +186,11 @@ async function handleFile(file) {
 
     const formData = new FormData();
     formData.append('file', file);
+    // Tell the backend which language to render the report in. Falls back
+    // to the active UI language (set via lang-toggle) if the dashboard's
+    // languageSelect dropdown isn't on this page.
+    const langSelect = document.getElementById('languageSelect');
+    formData.append('target_language', langSelect ? langSelect.value : currentLang);
 
     const headers = {};
     if (window.firebaseAuth && window.firebaseAuth.currentUser) {
@@ -321,7 +334,10 @@ function renderResults(data) {
 /* ─ Download brief ─ */
 btnDownload.addEventListener('click', () => {
     if (!currentBrief) return;
-    const blob = new Blob([currentBrief], { type: 'text/plain' });
+    // Lead with a UTF-8 BOM and declare the charset on the MIME type so
+    // editors that default to Windows-1252 / Latin-1 (Notepad, Excel,
+    // older TextEdit) don't corrupt German umlauts / § into mojibake.
+    const blob = new Blob(['﻿' + currentBrief], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

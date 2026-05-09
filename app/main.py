@@ -31,7 +31,7 @@ else:
 
 _db = gc_firestore.AsyncClient(database="contractdb")
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile, Depends
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -180,6 +180,7 @@ async def _get_monthly_count(uid: str) -> int:
 async def analyze_contract(
     request: Request,
     file: UploadFile = File(...),
+    target_language: str = Form("de"),
     uid: str = Depends(get_current_user)
 ):
     """Full analysis pipeline: ingest -> analyze -> assemble report.
@@ -215,13 +216,16 @@ async def analyze_contract(
 
     try:
         try:
+            # Coerce to a known value so a malformed client can't poison the prompt.
+            lang = "en" if target_language == "en" else "de"
+
             async def _run_pipeline():
                 try:
                     extraction, clauses = await process_contract(temp_path)
                 except ValueError as e:
                     raise HTTPException(status_code=400, detail=str(e))
-                findings, rate_bench = await analyze_clauses(extraction, clauses)
-                return build_report(extraction, findings, rate_bench)
+                findings, rate_bench = await analyze_clauses(extraction, clauses, lang)
+                return build_report(extraction, findings, rate_bench, lang)
 
             report = await asyncio.wait_for(_run_pipeline(), timeout=ANALYSIS_TIMEOUT_SECONDS)
         except asyncio.TimeoutError:

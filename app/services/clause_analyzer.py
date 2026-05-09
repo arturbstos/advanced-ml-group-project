@@ -17,7 +17,7 @@ import os
 from typing import List, Optional
 
 from openai import AsyncOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.services.ingestion import ContractExtraction
@@ -36,18 +36,51 @@ _RATE_KEYWORDS = (
     "€", "rate", "remunerat", "payment", "compensation",
 )
 
+# Language-keyed copy. "de"/"en" are coerced upstream so we can index safely.
+_LANG_NAMES = {"de": "German", "en": "English"}
+_LOW_RISK_TITLE = {"de": "Standardumfang", "en": "Within standard scope"}
+_ANALYSIS_ERROR_TITLE = {"de": "Analysefehler", "en": "Analysis error"}
+_ANALYSIS_ERROR_BODY = {
+    "de": "Diese Klausel konnte nicht automatisch analysiert werden ({err}).",
+    "en": "This clause could not be analyzed automatically ({err}).",
+}
+
+_RATE_FINDING_COPY = {
+    "de": {
+        "title": "Stundensatz unter dem 25 %-Perzentil-Benchmark",
+        "body": (
+            "Der angebotene Stundensatz von €{offered:.2f}/h liegt unter dem "
+            "25 %-Perzentil-Benchmark von €{p25}/h für {skill} ({exp}, {region}). "
+            "Der Marktmedian beträgt €{median}/h ({source})."
+        ),
+        "redline": "Der Auftragnehmer erhält ein Stundenhonorar von €{median:.0f} (netto).",
+    },
+    "en": {
+        "title": "Hourly rate below 25th-percentile benchmark",
+        "body": (
+            "The offered rate of €{offered:.2f}/h is below the 25th-percentile "
+            "benchmark of €{p25}/h for {skill} ({exp}, {region}). Market median "
+            "is €{median}/h ({source})."
+        ),
+        "redline": "Der Auftragnehmer erhält ein Stundenhonorar von €{median:.0f} (netto).",
+    },
+}
+
 
 class Finding(BaseModel):
-    risk: str  # "high" | "medium" | "low"
-    title: str
-    clause: str
-    body: str
-    redline: Optional[str] = None
-    statute: Optional[str] = None
-    source: str
+    risk: str = Field(description="One of 'high', 'medium', or 'low'.")
+    title: str = Field(description="A short title summarising the issue, strictly in the requested target language.")
+    clause: str = Field(description="The verbatim clause being analysed. Keep it in its ORIGINAL language (German source). Do NOT translate or paraphrase the source clause.")
+    body: str = Field(description="The legal reasoning, 2–3 sentences, strictly translated into the target language.")
+    redline: Optional[str] = Field(default=None, description="A concrete replacement sentence, strictly in the target language, or null.")
+    statute: Optional[str] = Field(default=None, description="Statute citation (e.g. '§ 7 SGB IV'). Statute references stay in their canonical German form.")
+    source: str = Field(description="Citation of the matched playbook entry (e.g. 'Playbook PB-001'), the benchmark, or 'Statutory default'.")
 
 
-_SYSTEM_PROMPT = """You are a German contract-law expert analyzing freelance (freie Mitarbeit) contracts.
+def _build_system_prompt(target_language: str) -> str:
+    lang = _LANG_NAMES.get(target_language, "English")
+    low_label = _LOW_RISK_TITLE.get(target_language, "Within standard scope")
+    return f"""You are a German contract-law expert analyzing freelance (freie Mitarbeit) contracts.
 
 You will receive:
   1. A specific clause from a German freelancer contract.
@@ -60,11 +93,16 @@ Output ONE Finding. Classify risk as follows:
   - "medium" — legally valid but suboptimal: reduces entitlements or leverage, departs from industry norms.
   - "low"    — within standard scope; no action required.
 
+CRITICAL: You will receive legal context from our database that contains BOTH English and German text.
+You MUST translate and synthesize your entire response — including the "title", "body" (legal reasoning),
+and "redline" — STRICTLY into {lang}. Do NOT mix languages in the JSON output. The user has requested the
+output in {lang}.
+
 Rules:
-  - If none of the playbook candidates are a real match, return risk="low", title="Within standard scope".
-  - Quote the clause verbatim in the "clause" field; do not paraphrase it.
-  - The "body" must be 2–3 sentences in English, citing the statute or benchmark source where applicable.
-  - "redline" must be a concrete replacement sentence in the same language as the original clause (German → German, English → English), or null.
+  - If none of the playbook candidates are a real match, return risk="low", title="{low_label}".
+  - Quote the clause verbatim in the "clause" field — keep it in its ORIGINAL German source language; do NOT translate or paraphrase the source clause.
+  - The "body" must be 2–3 sentences in {lang}, citing the statute or benchmark source where applicable.
+  - "redline" must be a concrete replacement sentence in {lang}, or null. Statute references inside it (e.g. "§ 7 SGB IV") stay in canonical German form.
   - "source" must cite either the matched playbook entry (e.g. "Playbook PB-001"), the benchmark (e.g. "Freelancer-Kompass 2025"), or "Statutory default".
 """
 
@@ -74,6 +112,7 @@ async def _analyze_single_clause(
     playbook_matches: List[playbook_lookup.PlaybookMatch],
     statutes: List[statute_lookup.StatuteRef],
     rate_context: Optional[str],
+    target_language: str,
 ) -> Finding:
     pb_context = "\n".join(
         f"[{m.id}] {m.clause_type} (risk={m.risk_level}, similarity={m.similarity:.2f})\n"
@@ -92,13 +131,15 @@ async def _analyze_single_clause(
         f"CLAUSE:\n{clause}\n\n"
         f"PLAYBOOK CANDIDATES:\n{pb_context}\n\n"
         f"STATUTE REFERENCES:\n{stat_context}\n\n"
-        f"RATE CONTEXT:\n{rate_context or '(not applicable)'}\n"
+        f"RATE CONTEXT:\n{rate_context or '(not applicable)'}\n\n"
+        f"REMINDER: synthesize the title, body and redline strictly in "
+        f"{_LANG_NAMES.get(target_language, 'English')} only."
     )
 
     resp = await _parse_with_retry(
         model=_LLM_MODEL,
         messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": _build_system_prompt(target_language)},
             {"role": "user", "content": user_msg},
         ],
         response_format=Finding,
@@ -131,14 +172,20 @@ def _clause_concerns_rate(clause: str) -> bool:
 async def analyze(
     extraction: ContractExtraction,
     clauses: List[str],
+    target_language: str = "de",
 ) -> tuple[List[Finding], Optional[rate_lookup.RateBenchmark]]:
     """Run the full clause analysis over an extracted contract.
 
     `clauses` is the list of verbatim chunks produced by
     `ingestion.chunk_contract_text` — analysis embeds and reasons over
     these exact strings, not LLM-paraphrased copies.
+
+    `target_language` ("de" or "en") controls the synthesis language of
+    every Finding's title / body / redline. Statute citations stay in
+    canonical German form regardless.
     """
     findings: List[Finding] = []
+    lang = "en" if target_language == "en" else "de"
 
     # 1. Rate benchmark — looked up once, reused across rate-related clauses.
     rate_bench = await rate_lookup.lookup(
@@ -149,22 +196,22 @@ async def analyze(
 
     # 2. Synthetic "rate below p25" finding — skip if rate is 0 (not stated in contract)
     if rate_bench and extraction.hourly_rate_eur > 0 and extraction.hourly_rate_eur < float(rate_bench.p25):
+        copy = _RATE_FINDING_COPY[lang]
         findings.append(
             Finding(
                 risk="high",
-                title="Hourly rate below 25th-percentile benchmark",
+                title=copy["title"],
                 clause=f"Stundenhonorar: €{extraction.hourly_rate_eur:.2f}/h",
-                body=(
-                    f"The offered rate of €{extraction.hourly_rate_eur:.2f}/h is below the "
-                    f"25th-percentile benchmark of €{rate_bench.p25}/h for "
-                    f"{rate_bench.skill_category} ({rate_bench.experience}, "
-                    f"{rate_bench.region or 'Germany'}). Market median is "
-                    f"€{rate_bench.median}/h ({rate_bench.source})."
+                body=copy["body"].format(
+                    offered=extraction.hourly_rate_eur,
+                    p25=rate_bench.p25,
+                    skill=rate_bench.skill_category,
+                    exp=rate_bench.experience,
+                    region=rate_bench.region or ("Deutschland" if lang == "de" else "Germany"),
+                    median=rate_bench.median,
+                    source=rate_bench.source,
                 ),
-                redline=(
-                    f"Der Auftragnehmer erhält ein Stundenhonorar von "
-                    f"€{float(rate_bench.median):.0f} (netto)."
-                ),
+                redline=copy["redline"].format(median=float(rate_bench.median)),
                 statute=None,
                 source=f"{rate_bench.source} {rate_bench.source_year}",
             )
@@ -198,13 +245,14 @@ async def analyze(
                 playbook_matches=matches,
                 statutes=statutes,
                 rate_context=clause_rate_ctx,
+                target_language=lang,
             )
         except Exception as e:
             return Finding(
                 risk="low",
-                title="Analysis error",
+                title=_ANALYSIS_ERROR_TITLE[lang],
                 clause=clause,
-                body=f"This clause could not be analyzed automatically ({type(e).__name__}).",
+                body=_ANALYSIS_ERROR_BODY[lang].format(err=type(e).__name__),
                 redline=None,
                 statute=None,
                 source="System",

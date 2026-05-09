@@ -99,7 +99,7 @@ def patched_app(monkeypatch):
             ["Sample clause text for the test."],
         )
 
-    async def fake_analyze_clauses(_extraction, _clauses):
+    async def fake_analyze_clauses(_extraction, _clauses, _target_language="de"):
         finding = Finding(
             risk="medium",
             title="Sample finding",

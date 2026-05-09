@@ -252,7 +252,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function downloadBrief(briefContent, originalFilename) {
-        const blob = new Blob([briefContent], { type: 'text/plain' });
+        // UTF-8 BOM + charset so editors that default to Latin-1 don't
+        // mojibake German characters (ä → Ã¤, § → Â§, etc.).
+        const blob = new Blob(['﻿' + briefContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -456,7 +458,7 @@ function showReportModal(analysis) {
 
     // Download handler
     btnDownload.onclick = () => {
-        const blob = new Blob([report.brief || ''], { type: 'text/plain' });
+        const blob = new Blob(['﻿' + (report.brief || '')], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
