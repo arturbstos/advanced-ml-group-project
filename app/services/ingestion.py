@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
 from typing import List, Optional
 
+from app.services.redaction import redact_text
+
 # Define schema for extraction based on Technical Architecture Step 1
 class ContractExtraction(BaseModel):
     skill_category: str
@@ -33,6 +35,10 @@ async def process_contract(file_path: str) -> ContractExtraction:
     text = text.strip()
     if not text:
         raise ValueError("Scanned PDF detected — only text-based PDFs are supported. Please use a digitally-created PDF.")
+
+    # GDPR: strip PII (names, orgs, locations, IBANs) on-device before any
+    # OpenAI call. The LLM only ever sees redacted contract text.
+    text = await redact_text(text)
 
     system_prompt = """You are an expert legal AI assistant specialized in analyzing German freelancer contracts.
 Your task is to extract structured data from the provided contract text according to the schema.

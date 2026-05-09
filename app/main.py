@@ -49,6 +49,8 @@ if os.getenv("ENV") == "development":
     _ALLOWED_ORIGINS = ["*"]
 else:
     _ALLOWED_ORIGINS = [
+        "https://veritas-demo.web.app",
+        "https://veritas-demo.firebaseapp.com",
         "https://veritas-43d91.web.app",
         "https://veritas-43d91.firebaseapp.com",
     ]
