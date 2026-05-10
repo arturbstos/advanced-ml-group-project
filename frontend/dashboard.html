@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mode="refined" data-density="regular">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,226 +8,170 @@
     <meta http-equiv="Expires" content="0">
     <title>Dashboard — veritas</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=7">
-    <style>
-        .dashboard-container {
-            max-width: 1000px;
-            margin: 100px auto 40px auto;
-            padding: 0 20px;
-            min-height: 60vh;
-        }
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        .dashboard-header h1 {
-            color: var(--text-main);
-            font-size: 2rem;
-            margin: 0;
-        }
-        .analysis-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        .analysis-card {
-            background: var(--card-bg);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-        }
-        .analysis-card:hover {
-            border-color: rgba(255,255,255,0.2);
-            transform: translateY(-2px);
-            background: rgba(40, 50, 70, 0.8);
-        }
-        .analysis-title {
-            color: var(--text-main);
-            font-weight: 600;
-            font-size: 1.1rem;
-            word-break: break-all;
-        }
-        .analysis-meta {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-        .analysis-stats {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-        }
-        .stat-pill {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .stat-high {
-            background: var(--risk-high-bg);
-            color: var(--risk-high);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        .stat-med {
-            background: var(--risk-med-bg);
-            color: var(--risk-med);
-            border: 1px solid rgba(234, 179, 8, 0.2);
-        }
-        .stat-low {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        #dashboard-loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-        }
-    </style>
+    <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
     <!-- Floating Pill Nav -->
-    <nav class="pill-nav" id="pill-nav">
+    <nav class="pill-nav nav" id="pill-nav">
         <div class="nav-left">
-            <a href="index.html" class="nav-logo" style="text-decoration: none;">
-                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 3v18"/>
-                    <path d="M7 21h10"/>
-                    <path d="M3 7h4c2 0 4-1 5-2 1 1 3 2 5 2h4"/>
-                    <path d="M2 16l3-7 3 7c-1 1.5-5 1.5-6 0Z"/>
-                    <path d="M16 16l3-7 3 7c-1 1.5-5 1.5-6 0Z"/>
-                </svg>
-                <span class="mono beta-tag">veritas</span>
+            <a href="index.html" class="brand nav-logo">
+                <span class="brand-mark">V</span>
+                <span>veritas</span>
+                <span class="brand-tag beta-tag">Beta</span>
             </a>
         </div>
         <div class="nav-right">
-            <button class="nav-btn btn-lang mono" id="lang-toggle" aria-label="Switch language">DE</button>
-            <button class="nav-btn mono" id="btn-account" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--white);margin-right:6px;" data-i18n="nav.account">Account</button>
-            <button class="nav-btn btn-login mono" id="btn-logout" data-i18n="nav.logout">Log Out</button>
+            <button class="nav-btn btn-ghost-pill btn-lang mono" id="lang-toggle" aria-label="Switch language">DE</button>
+            <button class="nav-btn btn-ghost-pill mono" id="btn-account" data-i18n="nav.account">Account</button>
+            <button class="nav-btn btn-primary-pill btn-login mono" id="btn-logout" data-i18n="nav.logout">Log Out</button>
         </div>
     </nav>
 
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h1 data-i18n="dashboard.title">Dashboard</h1>
+    <div class="dash-wrap dashboard-container">
+        <div class="dash-head dashboard-header">
+            <div>
+                <div class="section-label mono" data-i18n="dashboard.eyebrow" style="margin-bottom:8px;">// your workspace</div>
+                <h1 class="dash-title" data-i18n="dashboard.title">Dashboard</h1>
+                <div class="dash-sub" id="dash-sub-email"></div>
+            </div>
         </div>
 
         <!-- Plan usage banner -->
-        <div id="plan-banner" style="display:none;align-items:center;justify-content:space-between;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:14px 20px;margin-bottom:24px;gap:16px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:14px;">
-                <span id="plan-tier-badge" class="mono" style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;padding:4px 10px;border-radius:9999px;text-transform:uppercase;"></span>
-                <div>
-                    <div id="plan-usage-text" class="mono" style="font-size:0.82rem;color:#f5f5f5;"></div>
-                    <div id="plan-usage-bar-wrap" style="margin-top:6px;height:4px;background:rgba(255,255,255,0.08);border-radius:9999px;width:180px;overflow:hidden;">
-                        <div id="plan-usage-bar" style="height:100%;border-radius:9999px;transition:width 0.4s;"></div>
-                    </div>
+        <div id="plan-banner" style="display:none;">
+            <span id="plan-tier-badge" class="mono"></span>
+            <div class="plan-text">
+                <div id="plan-usage-text" class="mono"></div>
+                <div id="plan-usage-bar-wrap">
+                    <div id="plan-usage-bar"></div>
                 </div>
             </div>
-            <a id="plan-upgrade-link" href="index.html#pricing" class="mono" style="font-size:0.78rem;color:var(--white);text-decoration:none;border:1px solid rgba(255,255,255,0.2);padding:6px 14px;border-radius:9999px;white-space:nowrap;transition:all 0.2s;" data-i18n="dashboard.upgrade">Upgrade plan →</a>
+            <a id="plan-upgrade-link" href="index.html#pricing" class="mono" data-i18n="dashboard.upgrade">Manage plan →</a>
         </div>
 
         <!-- Analyzer Terminal (embedded) -->
-        <div class="terminal-window" style="margin-bottom:48px;">
+        <div class="terminal-window window" style="margin-bottom:48px;">
             <div class="window-bar">
                 <div class="window-dots">
-                    <span class="dot red"></span>
-                    <span class="dot yellow"></span>
-                    <span class="dot green"></span>
+                    <span class="window-dot r dot red"></span>
+                    <span class="window-dot y dot yellow"></span>
+                    <span class="window-dot g dot green"></span>
                 </div>
                 <span class="window-title mono">veritas — analyzer</span>
             </div>
-            <div class="terminal-body">
+            <div class="terminal-body window-body">
                 <!-- Upload state -->
                 <div id="upload-state">
-                    <h2 class="terminal-h2" data-i18n="dashboard.new_analysis">New analysis.</h2>
-                    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;font-size:0.8rem;">
-                        <label for="languageSelect" class="mono dim" data-i18n="analyzer.lang_label">Report language:</label>
-                        <select id="languageSelect" class="mono" style="background:rgba(0,0,0,0.4);border:1px solid var(--border);color:var(--white);padding:0.4rem 0.7rem;border-radius:4px;font-family:var(--font-mono);font-size:0.78rem;cursor:pointer;outline:none;">
-                            <option value="de">Deutsch</option>
-                            <option value="en">English</option>
-                        </select>
+                    <div class="analyzer-lang-row">
+                        <div>
+                            <h2 class="terminal-h2" data-i18n="dashboard.new_analysis">New analysis.</h2>
+                            <p class="mono dim" style="font-size:12px;margin-top:6px;" data-i18n="analyzer.timing">Average analysis takes 7–9 seconds.</p>
+                        </div>
+                        <label class="lang-label">
+                            <span class="dim" data-i18n="analyzer.lang_label">report:</span>
+                            <select id="languageSelect" class="mono" style="background:var(--bg-elev);border:1px solid var(--border-mid);color:var(--text-soft);padding:6px 12px;border-radius:9999px;font-family:var(--font-mono);font-size:12px;cursor:pointer;outline:none;">
+                                <option value="de">Deutsch</option>
+                                <option value="en">English</option>
+                            </select>
+                        </label>
                     </div>
                     <div id="drop-zone" class="drop-zone">
-                        <span class="upload-icon">📄</span>
-                        <p class="mono" data-i18n="analyzer.drop">Drop your PDF contract here</p>
+                        <span class="doc-icon upload-icon"></span>
+                        <div class="drop-zone-title" data-i18n="analyzer.drop">Drop your PDF contract here</div>
+                        <div class="drop-zone-sub mono" data-i18n="analyzer.subnote">or browse from your machine — max 10 MB · German or English</div>
                         <input type="file" id="file-input" accept=".pdf" hidden>
-                        <button class="btn-browse mono" onclick="document.getElementById('file-input').click()" data-i18n="analyzer.browse">Browse files</button>
-                        <p class="mono" style="font-size:0.72rem;margin-top:1.5rem;line-height:1.6;color:#888;" data-i18n="analyzer.privacy">Your contract is sent to OpenAI for analysis and is not stored by veritas. See our Privacy Policy.</p>
+                        <button class="browse-btn btn-browse mono" onclick="document.getElementById('file-input').click()" data-i18n="analyzer.browse">Browse files →</button>
+                        <p class="privacy mono">
+                            <span data-i18n="analyzer.privacy.lead">Your contract is sent to OpenAI for analysis and is not stored by veritas. See our </span><a href="#" id="link-privacy" style="color:var(--text-soft);text-decoration:underline;text-underline-offset:3px;cursor:pointer;" data-i18n="analyzer.privacy.link">Privacy Policy</a>.
+                        </p>
+                        <button id="btn-demo-contract" class="mono" style="margin-top:16px;font-size:11px;color:var(--accent);text-decoration:underline;text-underline-offset:3px;background:transparent;border:none;cursor:pointer;font-family:var(--font-mono);" data-i18n="analyzer.demo">Or try the demo contract →</button>
                     </div>
                 </div>
 
                 <!-- Loading state -->
                 <div id="loading" class="hidden">
-                    <div class="loading-inner">
+                    <div class="loading-inner load-state">
+                        <div class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
+                            // running pipeline
+                        </div>
                         <div class="terminal-loader">
                             <div class="loader-lines">
-                                <div class="loader-line mono" data-i18n="loading.l1">$ Loading contract...</div>
-                                <div class="loader-line mono" data-i18n="loading.l2">$ Extracting clauses via GPT-4o...</div>
-                                <div class="loader-line mono" data-i18n="loading.l3">$ Running vector similarity search...</div>
-                                <div class="loader-line mono typing" data-i18n="loading.l4">$ Synthesizing risk report...</div>
+                                <div class="loader-line load-line mono" data-i18n="loading.l1">$ Loading contract...</div>
+                                <div class="loader-line load-line mono" data-i18n="loading.l2">$ Extracting clauses via GPT-4o...</div>
+                                <div class="loader-line load-line mono" data-i18n="loading.l3">$ Running vector similarity search...</div>
+                                <div class="loader-line load-line mono typing" data-i18n="loading.l4">$ Synthesizing risk report...</div>
                             </div>
-                            <div class="spinner-bar"></div>
+                            <div class="spinner-bar load-progress"><div class="load-progress-fill"></div></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Results state -->
                 <div id="results-section" class="hidden">
-                    <div class="results-header">
-                        <h2 class="terminal-h2" data-i18n="results.heading">Analysis complete.</h2>
-                        <div class="summary-pills" id="summary-pills"></div>
-                    </div>
-                    <div id="rate-benchmark-section" class="hidden" style="margin-bottom:2rem;padding:1.25rem;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
-                        <div class="mono dim" style="font-size:0.75rem;margin-bottom:0.75rem;">// rate benchmark</div>
-                        <div id="rate-benchmark-label" class="mono" style="font-size:0.85rem;margin-bottom:0.75rem;color:var(--white);"></div>
-                        <div style="position:relative;height:28px;background:rgba(255,255,255,0.05);border-radius:6px;overflow:hidden;">
-                            <div id="rate-bar-p25"   style="position:absolute;top:0;bottom:0;background:rgba(239,68,68,0.25);"></div>
-                            <div id="rate-bar-mid"   style="position:absolute;top:0;bottom:0;background:rgba(234,179,8,0.25);"></div>
-                            <div id="rate-bar-p75"   style="position:absolute;top:0;bottom:0;background:rgba(34,197,94,0.2);"></div>
-                            <div id="rate-bar-offer" style="position:absolute;top:4px;bottom:4px;width:3px;background:#fff;border-radius:2px;"></div>
-                        </div>
-                        <div id="rate-benchmark-ticks" class="mono dim" style="display:flex;justify-content:space-between;font-size:0.7rem;margin-top:0.4rem;"></div>
-                    </div>
-                    <div class="findings-list" id="findings-container"></div>
-                    <div class="brief-section">
-                        <div class="brief-header">
-                            <span class="mono dim">// negotiation_brief.txt</span>
-                            <div style="display:flex;gap:8px;">
-                                <button id="btn-download" class="btn-ghost mono">↓ TXT</button>
-                                <button id="btn-download-pdf" class="btn-ghost mono">↓ PDF</button>
+                    <div class="results-header results-head">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+                            <div>
+                                <div id="results-eyebrow" class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
+                                    // analysis_complete
+                                </div>
+                                <h2 class="results-title" data-i18n="results.heading">Here's what to push back on.</h2>
+                            </div>
+                            <div class="action-row">
+                                <button id="btn-rerun" class="btn-icon" title="Re-run" aria-label="Re-run">↻</button>
+                                <button id="btn-share" class="btn-icon" title="Share" aria-label="Share">↗</button>
                             </div>
                         </div>
-                        <pre id="negotiation-brief" class="mono"></pre>
+                        <div class="results-meta">
+                            <div class="summary-pills" id="summary-pills"></div>
+                            <span id="clauses-flagged" class="mono dim" style="font-size:11px;margin-left:8px;"></span>
+                        </div>
                     </div>
-                    <button id="btn-reset" class="btn-ghost mono" style="margin-top:2rem;" data-i18n="results.reset">← Analyze another</button>
+                    <div id="score-grid" class="score-grid hidden"></div>
+                    <div id="rate-benchmark-section" class="hidden">
+                        <div class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">// rate benchmark</div>
+                        <div id="rate-benchmark-label" class="mono"></div>
+                        <div class="rate-bar-wrap" style="position:relative;">
+                            <div id="rate-bar-p25"   style="position:absolute;left:0;width:0;"></div>
+                            <div id="rate-bar-mid"   style="position:absolute;left:0;width:0;"></div>
+                            <div id="rate-bar-p75"   style="position:absolute;left:0;width:0;"></div>
+                            <div id="rate-bar-offer" style="position:absolute;left:0;"></div>
+                        </div>
+                        <div id="rate-benchmark-ticks" class="mono dim"></div>
+                    </div>
+                    <div class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin:16px 0 14px;" data-i18n="results.findings_label">// findings · click to expand</div>
+                    <div class="findings findings-list" id="findings-container"></div>
+                    <div class="brief brief-section">
+                        <div class="brief-head brief-header">
+                            <span class="brief-title mono">// negotiation_brief.txt</span>
+                            <div style="display:flex;gap:8px;">
+                                <button id="btn-download" class="btn btn-ghost mono" style="padding:8px 14px;font-size:12px;">↓ TXT</button>
+                                <button id="btn-download-pdf" class="btn btn-ghost mono" style="padding:8px 14px;font-size:12px;">↓ PDF</button>
+                                <button id="btn-brief-copy" class="btn btn-ghost mono" style="padding:8px 14px;font-size:12px;" data-i18n="results.copy">Copy</button>
+                            </div>
+                        </div>
+                        <pre id="negotiation-brief" class="brief-body mono"></pre>
+                    </div>
+                    <div class="action-row" style="margin-top:28px;">
+                        <button id="btn-reset" class="btn btn-ghost mono" data-i18n="results.reset">← Analyze another</button>
+                        <button id="btn-send-client" class="btn btn-primary mono" data-i18n="results.send_client">Send to client →</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <h2 style="font-size:1.5rem;margin-bottom:20px;color:var(--white);" data-i18n="dashboard.your_analyses">Your Analyses</h2>
+        <div class="head-row" style="margin-bottom:18px;">
+            <div>
+                <div class="section-label mono">// history</div>
+                <h2 style="font-size:22px;font-weight:600;letter-spacing:-0.02em;color:var(--text);" data-i18n="dashboard.your_analyses">Past analyses</h2>
+            </div>
+        </div>
 
-        <div id="dashboard-controls" class="hidden" style="display:none;gap:12px;margin-bottom:24px;align-items:center;flex-wrap:wrap;">
-            <input id="search-input" type="text" placeholder="Search by filename..." data-i18n="dashboard.search" class="mono" style="flex:1;min-width:200px;padding:8px 14px;background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-main);font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;">
-            <select id="filter-risk" class="mono" style="padding:8px 14px;background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text-main);font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;cursor:pointer;">
-                <option value="all">All Risk Levels</option>
+        <div id="dashboard-controls" class="hidden" style="display:none;">
+            <input id="search-input" type="text" placeholder="Search by filename..." data-i18n="dashboard.search" class="mono">
+            <select id="filter-risk" class="mono">
+                <option value="all">All risk levels</option>
                 <option value="high">Has HIGH findings</option>
                 <option value="medium">Has MED findings</option>
-                <option value="clear">ALL CLEAR</option>
+                <option value="clear">All clear</option>
             </select>
         </div>
 
@@ -236,53 +180,125 @@
         </div>
 
         <div id="empty-state" class="empty-state hidden">
-            <h3 style="color: var(--text-main); margin-bottom: 10px;" data-i18n="dashboard.empty.title">No analyses yet.</h3>
-            <p style="color: var(--text-muted); margin-bottom: 0;" data-i18n="dashboard.empty.desc">Upload a contract above to see it here.</p>
+            <h3 data-i18n="dashboard.empty.title">No analyses yet.</h3>
+            <p data-i18n="dashboard.empty.desc">Upload a contract above to see it here.</p>
         </div>
 
-        <div id="analysis-grid" class="analysis-grid"></div>
+        <div id="analysis-grid" class="analyses-grid analysis-grid"></div>
     </div>
 
     <!-- Footer -->
-    <footer class="site-footer">
-        <div class="footer-grid">
+    <footer class="footer site-footer">
+        <div class="footer-inner footer-grid">
             <div class="footer-brand">
-                <span class="mono">veritas</span>
-                <p class="mono dim">Intelligent German freelance contract risk analysis. Not legal advice.</p>
+                <span class="brand"><span class="brand-mark">V</span><span>veritas</span></span>
+                <p class="footer-tagline mono dim">Intelligent German freelance contract risk analysis. Not legal advice — get a Fachanwalt for that.</p>
             </div>
-            <div class="footer-links">
-                <span class="mono dim">Powered by</span>
-                <div class="tech-tags">
-                    <span class="mono tech-tag">GPT-4o</span>
-                    <span class="mono tech-tag">Firestore</span>
-                    <span class="mono tech-tag">FastAPI</span>
-                    <span class="mono tech-tag">Firebase</span>
+            <div class="footer-stack footer-links">
+                <span class="mono dim">// powered by</span>
+                <div class="tech-row tech-tags">
+                    <span class="tech-tag mono">GPT-4o</span>
+                    <span class="tech-tag mono">Firestore</span>
+                    <span class="tech-tag mono">FastAPI</span>
+                    <span class="tech-tag mono">Firebase</span>
                 </div>
             </div>
         </div>
-        <div class="footer-bottom mono dim">© 2026 Nova School of Business and Economics — For educational purposes only.</div>
+        <div class="footer-legal footer-bottom mono dim">© 2026 Nova School of Business and Economics — For educational purposes only · Not legal advice</div>
     </footer>
 
     <!-- Account Management Modal -->
-    <div id="account-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;overflow-y:auto;">
-        <div style="min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px;">
-            <div style="background:#111;max-width:420px;width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.1);padding:30px;position:relative;">
-                <button id="account-modal-close" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#666;font-size:1.3rem;cursor:pointer;">✕</button>
-                <h2 class="mono" style="color:#f5f5f5;margin-bottom:6px;font-size:1.2rem;">Account Settings</h2>
-                <p id="account-email" class="mono" style="color:#666;font-size:0.8rem;margin-bottom:24px;"></p>
+    <div id="account-modal" style="display:none;">
+        <div>
+            <div>
+                <button id="account-modal-close" class="modal-close">&times;</button>
+                <div class="modal-eyebrow mono">// account</div>
+                <h2 class="modal-title">Account settings</h2>
+                <p class="mono dim" style="font-size:12px;margin-bottom:4px;">signed in as</p>
+                <p id="account-email" class="mono" style="font-size:13px;color:var(--text);margin-bottom:22px;"></p>
 
-                <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;margin-bottom:20px;">
-                    <h3 class="mono" style="color:#aaa;font-size:0.9rem;margin-bottom:12px;">Change Password</h3>
-                    <input id="new-password" type="password" placeholder="New password (min 6 chars)" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#f5f5f5;font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;margin-bottom:8px;">
-                    <button id="btn-change-password" class="mono" style="width:100%;padding:10px;background:var(--white);border:1px solid var(--white);color:var(--black);border-radius:8px;cursor:pointer;font-weight:600;">Update Password</button>
-                    <p id="password-msg" class="mono" style="font-size:0.8rem;margin-top:8px;display:none;"></p>
+                <div class="modal-section">
+                    <h3 class="mono">change password</h3>
+                    <input id="new-password" type="password" placeholder="New password (min 6 chars)" style="margin-bottom:10px;">
+                    <button id="btn-change-password" class="modal-submit mono">Update password</button>
+                    <p id="password-msg" class="mono" style="font-size:11.5px;margin-top:8px;display:none;"></p>
                 </div>
 
-                <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;">
-                    <h3 class="mono" style="color:#ef4444;font-size:0.9rem;margin-bottom:8px;">Danger Zone</h3>
-                    <p class="mono" style="color:#666;font-size:0.8rem;margin-bottom:12px;">Deleting your account is permanent and cannot be undone.</p>
-                    <button id="btn-delete-account" class="mono" style="width:100%;padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:8px;cursor:pointer;font-weight:600;">Delete Account</button>
+                <div class="modal-section danger">
+                    <h3 class="mono">danger zone</h3>
+                    <p class="mono dim" style="font-size:11.5px;margin-bottom:12px;line-height:1.6;">
+                        Deleting your account is permanent. All past analyses will be erased.
+                    </p>
+                    <button id="btn-delete-account" class="danger-btn mono">Delete account</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Modal (refined, sectioned) -->
+    <div id="privacy-modal" class="modal-overlay hidden">
+        <div class="modal privacy-modal">
+            <button id="privacy-modal-close" class="modal-close">&times;</button>
+            <div class="modal-eyebrow mono">// privacy_policy.md</div>
+            <h2 class="modal-title">Privacy Policy</h2>
+            <div class="privacy-meta mono dim">Last updated · 2026-04-12 · v1.3</div>
+
+            <div class="privacy-body">
+                <section>
+                    <h3>1 · TL;DR</h3>
+                    <p>Your contract is sent to OpenAI for analysis. We do <strong>not</strong> store the file. We store metadata about the analysis (filename, timestamp, risk counts) so you can find it again on your dashboard. We never sell your data.</p>
+                </section>
+                <section>
+                    <h3>2 · Who we are</h3>
+                    <p>veritas is a research project of Nova School of Business and Economics, Lisbon. Data controller under Art. 4 GDPR: <span class="mono">veritas-team@novasbe.pt</span>.</p>
+                </section>
+                <section>
+                    <h3>3 · What we collect</h3>
+                    <ul>
+                        <li><strong>Account data</strong> — email, hashed password (bcrypt), language preference.</li>
+                        <li><strong>Analysis metadata</strong> — original filename, file size, timestamp, count of HIGH/MED/LOW findings.</li>
+                        <li><strong>Usage</strong> — aggregate page views via Plausible (EU-hosted, no IP storage, no cookies).</li>
+                        <li><strong>We do <em>not</em> collect</strong> — the contract PDF itself, billing info (Stripe holds that), or location data.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>4 · Where your contract goes</h3>
+                    <p>When you click "Analyze," the PDF is uploaded to our backend on Google Cloud Run (Frankfurt, <span class="mono">europe-west1</span>), parsed in memory, and the extracted text is sent to OpenAI's API for clause structuring and embedding.</p>
+                    <p>OpenAI does not train on API data per their <a href="https://openai.com/policies/api-data-usage-policies" target="_blank" rel="noopener">Enterprise Data Promise</a>. Embeddings, not the raw text, are stored in our Firestore vector index.</p>
+                </section>
+                <section>
+                    <h3>5 · How long we keep data</h3>
+                    <ul>
+                        <li>Account: until you delete it (Settings → Danger Zone).</li>
+                        <li>Analysis metadata: 12 months, then auto-purged.</li>
+                        <li>Server logs: 14 days.</li>
+                        <li>Original PDF text: never written to disk.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>6 · Your rights under GDPR</h3>
+                    <p>Articles 15–22 GDPR apply: access, rectification, erasure, restriction, portability, objection. Email <span class="mono">veritas-team@novasbe.pt</span> and we'll respond within 30 days.</p>
+                </section>
+                <section class="privacy-foot">
+                    <span class="mono dim">// EOF</span>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Banner -->
+    <div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-label="Cookie preferences">
+        <div class="cookie-inner">
+            <div class="cookie-text">
+                <div class="mono dim cookie-eyebrow">// privacy first</div>
+                <p class="cookie-msg">
+                    We use <strong>essential</strong> cookies to keep you logged in and <strong>analytics</strong> cookies (Plausible, EU-hosted) to understand which pages help freelancers most. No tracking pixels, no ad networks.
+                </p>
+            </div>
+            <div class="cookie-actions">
+                <button class="btn btn-ghost cookie-btn mono" id="cookie-reject">Reject non-essential</button>
+                <button class="btn btn-primary cookie-btn mono" id="cookie-accept">Accept all</button>
+                <a class="cookie-link mono" id="cookie-policy-link">Privacy Policy ↗</a>
             </div>
         </div>
     </div>
@@ -290,7 +306,8 @@
     <!-- Use auth.js to enforce login state -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module" src="auth.js?v=4"></script>
-    <script type="module" src="app.js?v=9"></script>
-    <script type="module" src="dashboard.js?v=7"></script>
+    <script type="module" src="app.js?v=10"></script>
+    <script type="module" src="dashboard.js?v=8"></script>
+    <script type="module" src="policies.js?v=1"></script>
 </body>
 </html>

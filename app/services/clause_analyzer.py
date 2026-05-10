@@ -54,6 +54,7 @@ _RATE_FINDING_COPY = {
             "Der Marktmedian beträgt €{median}/h ({source})."
         ),
         "redline": "Der Auftragnehmer erhält ein Stundenhonorar von €{median:.0f} (netto).",
+        "action": "Verhandle den Stundensatz mindestens auf das 25-%-Perzentil (€{p25}/h) hoch, idealerweise auf den Marktmedian (€{median}/h).",
     },
     "en": {
         "title": "Hourly rate below 25th-percentile benchmark",
@@ -63,6 +64,7 @@ _RATE_FINDING_COPY = {
             "is €{median}/h ({source})."
         ),
         "redline": "Der Auftragnehmer erhält ein Stundenhonorar von €{median:.0f} (netto).",
+        "action": "Negotiate the hourly rate up to at least the 25th-percentile benchmark (€{p25}/h), ideally to the market median (€{median}/h).",
     },
 }
 
@@ -74,6 +76,7 @@ class Finding(BaseModel):
     body: str = Field(description="The legal reasoning, 2–3 sentences, strictly translated into the target language.")
     redline: Optional[str] = Field(default=None, description="A concrete replacement sentence, strictly in the target language, or null.")
     statute: Optional[str] = Field(default=None, description="Statute citation (e.g. '§ 7 SGB IV'). Statute references stay in their canonical German form.")
+    action: Optional[str] = Field(default=None, description="A short, strategic recommendation in the target language describing WHAT to negotiate (e.g. 'Negotiate removal of fixed hours and replace with deliverables-based language'). One sentence. Distinct from the redline (which is the literal replacement text).")
     source: str = Field(description="Citation of the matched playbook entry (e.g. 'Playbook PB-001'), the benchmark, or 'Statutory default'.")
 
 
@@ -103,6 +106,7 @@ Rules:
   - Quote the clause verbatim in the "clause" field — keep it in its ORIGINAL German source language; do NOT translate or paraphrase the source clause.
   - The "body" must be 2–3 sentences in {lang}, citing the statute or benchmark source where applicable.
   - "redline" must be a concrete replacement sentence in {lang}, or null. Statute references inside it (e.g. "§ 7 SGB IV") stay in canonical German form.
+  - "action" must be ONE sentence in {lang} describing the strategic move the freelancer should make in negotiation (e.g. "Negotiate removal of fixed hours and replace with deliverables-based language"). It is distinct from the redline (which is the literal replacement text). For risk="low" findings, return null.
   - "source" must cite either the matched playbook entry (e.g. "Playbook PB-001"), the benchmark (e.g. "Freelancer-Kompass 2025"), or "Statutory default".
 """
 
@@ -213,6 +217,10 @@ async def analyze(
                 ),
                 redline=copy["redline"].format(median=float(rate_bench.median)),
                 statute=None,
+                action=copy["action"].format(
+                    p25=rate_bench.p25,
+                    median=int(rate_bench.median),
+                ),
                 source=f"{rate_bench.source} {rate_bench.source_year}",
             )
         )

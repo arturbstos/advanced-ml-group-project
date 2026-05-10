@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mode="refined" data-density="regular">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,338 +9,449 @@
     <title>veritas — Intelligent Freelance Contract Analyzer</title>
     <meta name="description" content="Upload your German freelance contract for structured AI-powered risk analysis against statutory law. Powered by GPT-4o and Firestore Vector Search.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
     <!-- Floating Pill Nav -->
-    <nav class="pill-nav" id="pill-nav">
+    <nav class="pill-nav nav" id="pill-nav">
         <div class="nav-left">
-            <span class="nav-logo">
-                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 3v18"/>
-                    <path d="M7 21h10"/>
-                    <path d="M3 7h4c2 0 4-1 5-2 1 1 3 2 5 2h4"/>
-                    <path d="M2 16l3-7 3 7c-1 1.5-5 1.5-6 0Z"/>
-                    <path d="M16 16l3-7 3 7c-1 1.5-5 1.5-6 0Z"/>
-                </svg>
-                <span class="mono beta-tag">Beta</span>
-            </span>
-            <a href="#how"     class="nav-link mono" data-i18n="nav.how">How It Works</a>
+            <a href="#hero" class="brand nav-logo">
+                <span class="brand-mark">V</span>
+                <span>veritas</span>
+                <span class="brand-tag beta-tag">Beta</span>
+            </a>
+            <a href="#how"     class="nav-link mono" data-i18n="nav.how">How</a>
             <a href="#pricing" class="nav-link mono" data-i18n="nav.pricing">Pricing</a>
-            <a href="#upload"  class="nav-link mono" data-i18n="nav.upload">Upload</a>
+            <a href="#upload"  class="nav-link mono" data-i18n="nav.upload">Analyzer</a>
         </div>
         <div class="nav-right">
-            <!-- Language toggle -->
-            <button class="nav-btn btn-lang mono" id="lang-toggle" aria-label="Switch language">DE</button>
-            <button class="nav-btn btn-login" data-i18n="nav.login">Log In</button>
+            <button class="nav-btn btn-ghost-pill btn-lang mono" id="lang-toggle" aria-label="Switch language">DE</button>
+            <button class="nav-btn btn-primary-pill btn-login" data-i18n="nav.login">Log In</button>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-section" id="hero">
+    <section class="hero hero-section" id="hero">
         <div class="grid-bg"></div>
 
         <div class="hero-content">
-            <div class="hero-top-label mono" data-i18n="hero.label">// German Freelance Contract Analyzer</div>
+            <span class="hero-eyebrow hero-top-label" data-i18n="hero.label">
+                <span class="pulse"></span>
+                German Freelance Contract Analyzer
+            </span>
             <h1 class="hero-title" data-i18n="hero.title">Know every<br>risk before<br>you sign.</h1>
-            <p class="hero-desc" data-i18n="hero.desc">We don't just flag issues. We show you what matters: Is it a false self-employment risk? An illegal liability cap? An unenforceable non-compete? Know why it matters and what to do about it.</p>
+            <p class="hero-desc" data-i18n="hero.desc">We don't just flag issues. We tell you what each clause actually means under German law — false self-employment, illegal liability caps, unenforceable non-competes — and draft the redline you should send back.</p>
             <div class="hero-actions">
-                <a href="#upload" class="btn-primary mono" data-i18n="hero.cta1">Analyze Contract →</a>
-                <a href="#how"    class="btn-ghost mono"   data-i18n="hero.cta2">See How It Works</a>
+                <a href="#upload" class="btn btn-primary mono" data-i18n="hero.cta1">Analyze a contract <span style="font-size:14px;">→</span></a>
+                <a href="#how"    class="btn btn-ghost mono" data-i18n="hero.cta2">See how it works</a>
             </div>
         </div>
 
         <!-- Terminal-style window preview -->
-        <div class="hero-window">
+        <div class="window hero-window">
             <div class="window-bar">
                 <div class="window-dots">
-                    <span class="dot red"></span>
-                    <span class="dot yellow"></span>
-                    <span class="dot green"></span>
+                    <span class="window-dot r dot red"></span>
+                    <span class="window-dot y dot yellow"></span>
+                    <span class="window-dot g dot green"></span>
                 </div>
-                <span class="window-title mono">veritas</span>
+                <span class="window-title mono">veritas — live analysis</span>
+                <div class="window-actions mono" aria-hidden="true">
+                    <span>⌥</span><span>⌘</span><span>⋯</span>
+                </div>
             </div>
-            <div class="window-content">
-                <div class="window-inner-label mono" data-i18n="hero.window.status">STATUS: LIVE ANALYSIS</div>
-                <div class="clause-preview">
-                    <div class="clause-line">
-                        <span class="mono dim">01</span>
-                        <span class="mono text-purple">risk:</span>
-                        <span class="mono text-red">HIGH</span>
-                    </div>
-                    <div class="clause-line">
-                        <span class="mono dim">02</span>
-                        <span class="mono text-purple">clause:</span>
-                        <span class="mono text-white">"§7 SGB IV · False Self-Employment"</span>
-                    </div>
-                    <div class="clause-line">
-                        <span class="mono dim">03</span>
-                        <span class="mono text-purple">statute:</span>
-                        <span class="mono text-green">§7 Abs. 1 SGB IV</span>
-                    </div>
-                    <div class="clause-line">
-                        <span class="mono dim">04</span>
-                        <span class="mono text-purple">severity:</span>
-                        <span class="mono text-yellow">9.4/10</span>
-                    </div>
-                    <div class="clause-line">
-                        <span class="mono dim">05</span>
-                        <span class="mono text-purple">action:</span>
-                        <span class="mono dim" data-i18n="hero.window.action">→ Redline provided</span>
-                    </div>
-                    <div class="cursor-blink">█</div>
+            <div class="window-body window-content">
+                <div class="walk-tabs" id="hero-walk-tabs">
+                    <span class="walk-tab on">01 · extract</span>
+                    <span class="walk-tab">02 · match</span>
+                    <span class="walk-tab">03 · flag</span>
                 </div>
+                <div class="walk-status window-inner-label">
+                    <span><span class="status-dot"></span><span data-i18n="hero.window.status">STATUS · LIVE</span></span>
+                    <span id="hero-walk-pass">PASS 1/3</span>
+                </div>
+                <div class="walk clause-preview" id="hero-walk-content"></div>
                 <div class="window-footer mono" data-i18n="hero.window.scroll">Keep scrolling ↓</div>
             </div>
         </div>
     </section>
 
+    <!-- Ticker -->
+    <div class="ticker" aria-hidden="true">
+        <div class="ticker-track">
+            <span class="ticker-item"><span class="dot" style="background:var(--red);"></span>§7 SGB IV · False self-employment</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--amber);"></span>§309 Nr. 7 BGB · Liability cap</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--amber);"></span>§31 UrhG · IP assignment</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--green);"></span>§271a BGB · Payment terms</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--amber);"></span>§74 HGB · Karenzentschädigung</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--green);"></span>§17 UWG · Confidentiality</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--red);"></span>BGH I ZR 304/12 · Non-compete</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--green);"></span>§620 BGB · Termination</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--red);"></span>§7 SGB IV · False self-employment</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--amber);"></span>§309 Nr. 7 BGB · Liability cap</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--amber);"></span>§31 UrhG · IP assignment</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--green);"></span>§271a BGB · Payment terms</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--amber);"></span>§74 HGB · Karenzentschädigung</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--green);"></span>§17 UWG · Confidentiality</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--red);"></span>BGH I ZR 304/12 · Non-compete</span>
+            <span class="ticker-item"><span class="dot" style="background:var(--green);"></span>§620 BGB · Termination</span>
+        </div>
+    </div>
+
     <!-- How It Works Section -->
-    <section class="how-section" id="how">
-        <div class="section-label mono" data-i18n="how.label">// How It Works</div>
-        <h2 class="section-title" data-i18n="how.title">Powered by AI.<br>Grounded in German law.</h2>
-        <div class="steps-grid">
-            <div class="step-card">
-                <div class="step-num mono">01</div>
+    <section class="section how-section" id="how">
+        <div class="head-row">
+            <div>
+                <div class="section-label mono" data-i18n="how.label">// how it works</div>
+                <h2 class="section-title" data-i18n="how.title">Powered by AI.<br>Grounded in German law.</h2>
+            </div>
+            <p class="section-sub" data-i18n="how.sub">Every flag we raise is anchored to a real statute or BGH ruling — and to a concrete redline you can paste into your reply.</p>
+        </div>
+        <div class="how-grid steps-grid">
+            <div class="how-cell step-card">
+                <div class="how-num step-num mono">step 01</div>
                 <h3 data-i18n="how.step1.title">Upload</h3>
-                <p class="mono dim" data-i18n="how.step1.desc">Drag and drop your PDF contract. We accept any German freelance agreement.</p>
+                <p class="mono dim" data-i18n="how.step1.desc">Drag and drop your German freelance contract. PDF, signed or unsigned.</p>
             </div>
-            <div class="step-card">
-                <div class="step-num mono">02</div>
+            <div class="how-cell step-card">
+                <div class="how-num step-num mono">step 02</div>
                 <h3 data-i18n="how.step2.title">Extract</h3>
-                <p class="mono dim" data-i18n="how.step2.desc">GPT-4o reads and structures every clause — rates, IP, liability, payment terms.</p>
+                <p class="mono dim" data-i18n="how.step2.desc">GPT-4o reads every clause — rates, IP, liability, hours, payment terms.</p>
             </div>
-            <div class="step-card">
-                <div class="step-num mono">03</div>
-                <h3 data-i18n="how.step3.title">Vector Match</h3>
-                <p class="mono dim" data-i18n="how.step3.desc">Each clause is embedded and matched against our legal playbook via Firestore Vector Search.</p>
+            <div class="how-cell step-card">
+                <div class="how-num step-num mono">step 03</div>
+                <h3 data-i18n="how.step3.title">Vector match</h3>
+                <p class="mono dim" data-i18n="how.step3.desc">66 risky-clause patterns. Firestore vector search finds yours in milliseconds.</p>
             </div>
-            <div class="step-card">
-                <div class="step-num mono">04</div>
-                <h3 data-i18n="how.step4.title">Report</h3>
-                <p class="mono dim" data-i18n="how.step4.desc">Receive a risk-ranked report with statutory citations, redlines, and a negotiation brief.</p>
+            <div class="how-cell step-card">
+                <div class="how-num step-num mono">step 04</div>
+                <h3 data-i18n="how.step4.title">Brief</h3>
+                <p class="mono dim" data-i18n="how.step4.desc">Risk-ranked report with statute citations, redlines, and a negotiation plan.</p>
             </div>
         </div>
     </section>
 
     <!-- Pricing Section -->
-    <section class="pricing-section" id="pricing">
-        <div class="section-label mono" data-i18n="pricing.label">// Pricing</div>
-        <h2 class="section-title" data-i18n="pricing.title">Simple, transparent pricing.</h2>
+    <section class="section pricing-section" id="pricing">
+        <div class="head-row">
+            <div>
+                <div class="section-label mono" data-i18n="pricing.label">// pricing</div>
+                <h2 class="section-title" data-i18n="pricing.title">Simple, transparent pricing.</h2>
+            </div>
+            <p class="section-sub" data-i18n="pricing.sub">No seat-based bait-and-switch. No "Contact Sales" wall. Pay for what you analyze.</p>
+        </div>
 
         <div class="pricing-grid">
-
             <!-- Free -->
-            <article class="pricing-card">
-                <header class="pricing-card-head">
-                    <span class="pricing-index mono">01 / 03</span>
+            <article class="price-card pricing-card">
+                <header class="price-head pricing-card-head">
+                    <span class="price-tier pricing-tier mono">Free</span>
                 </header>
-                <div class="pricing-card-body">
-                    <div class="pricing-amount">
-                        <span class="pricing-amount-value">€0</span>
-                        <span class="pricing-amount-period mono">/ month</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li class="mono"><span class="bullet">+</span> 1 contract analysis / mo</li>
-                        <li class="mono"><span class="bullet">+</span> Risk summary only</li>
-                        <li class="mono feature-off"><span class="bullet">−</span> No download brief</li>
-                        <li class="mono feature-off"><span class="bullet">−</span> Powered by Veritas badge</li>
-                    </ul>
+                <div class="price-amount pricing-amount">
+                    <span class="num pricing-amount-value">€0</span>
+                    <span class="per pricing-amount-period mono">/ month</span>
                 </div>
-                <footer class="pricing-card-foot">
-                    <div class="pricing-attrib">
-                        <div class="pricing-avatar mono">F</div>
-                        <div class="pricing-meta">
-                            <div class="pricing-tier mono">Free</div>
-                            <div class="pricing-role mono dim">Curious freelancer</div>
-                        </div>
-                    </div>
-                    <a href="#upload" class="pricing-action mono" aria-label="Get started">→</a>
+                <ul class="price-features pricing-features">
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.free.f1">1 contract analysis / mo</span></li>
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.free.f2">Risk summary only</span></li>
+                    <li class="off feature-off"><span class="pf-mark bullet">−</span><span data-i18n="pricing.free.f3">No download brief</span></li>
+                    <li class="off feature-off"><span class="pf-mark bullet">−</span><span data-i18n="pricing.free.f4">Veritas badge on output</span></li>
+                </ul>
+                <footer class="price-foot pricing-card-foot">
+                    <span class="price-role pricing-role mono" data-i18n="pricing.free.role">Curious freelancer</span>
+                    <a href="#upload" class="price-arrow pricing-action mono" aria-label="Get started">→</a>
                 </footer>
             </article>
 
             <!-- Pro -->
-            <article class="pricing-card pricing-featured">
-                <header class="pricing-card-head">
-                    <span class="pricing-index mono">02 / 03</span>
+            <article class="price-card featured pricing-card pricing-featured">
+                <header class="price-head pricing-card-head">
+                    <span class="price-tier pricing-tier mono">Pro</span>
                 </header>
-                <div class="pricing-card-body">
-                    <div class="pricing-amount">
-                        <span class="pricing-amount-value">€9.99</span>
-                        <span class="pricing-amount-period mono">/ month</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li class="mono"><span class="bullet">+</span> 10 contract analyses / mo</li>
-                        <li class="mono"><span class="bullet">+</span> Full negotiation brief</li>
-                        <li class="mono"><span class="bullet">+</span> Statute + benchmark sources</li>
-                        <li class="mono"><span class="bullet">+</span> Priority support</li>
-                    </ul>
+                <div class="price-amount pricing-amount">
+                    <span class="num pricing-amount-value">€9.99</span>
+                    <span class="per pricing-amount-period mono">/ month</span>
                 </div>
-                <footer class="pricing-card-foot">
-                    <div class="pricing-attrib">
-                        <div class="pricing-avatar mono">P</div>
-                        <div class="pricing-meta">
-                            <div class="pricing-tier mono">Pro</div>
-                            <div class="pricing-role mono dim">Active solo freelancer</div>
-                        </div>
-                    </div>
-                    <a href="mailto:hello@veritas.law?subject=Pro%20Plan%20Interest" class="pricing-action pricing-action-pro mono" aria-label="Upgrade to Pro">→</a>
+                <ul class="price-features pricing-features">
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.pro.f1">10 contract analyses / mo</span></li>
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.pro.f2">Full negotiation brief</span></li>
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.pro.f3">Statute + benchmark sources</span></li>
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.pro.f4">Priority support</span></li>
+                </ul>
+                <footer class="price-foot pricing-card-foot">
+                    <span class="price-role pricing-role mono" data-i18n="pricing.pro.role">Active solo freelancer</span>
+                    <a href="mailto:hello@veritas.law?subject=Pro%20Plan%20Interest" class="price-arrow pricing-action pricing-action-pro mono" aria-label="Upgrade to Pro">→</a>
                 </footer>
             </article>
 
             <!-- Team -->
-            <article class="pricing-card">
-                <header class="pricing-card-head">
-                    <span class="pricing-index mono">03 / 03</span>
+            <article class="price-card pricing-card">
+                <header class="price-head pricing-card-head">
+                    <span class="price-tier pricing-tier mono">Team</span>
                 </header>
-                <div class="pricing-card-body">
-                    <div class="pricing-amount">
-                        <span class="pricing-amount-value">€499</span>
-                        <span class="pricing-amount-period mono">/ year</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li class="mono"><span class="bullet">+</span> Up to 5 seats</li>
-                        <li class="mono"><span class="bullet">+</span> API access</li>
-                        <li class="mono"><span class="bullet">+</span> Custom playbook entries</li>
-                        <li class="mono"><span class="bullet">+</span> Co-branded brief PDFs</li>
-                    </ul>
+                <div class="price-amount pricing-amount">
+                    <span class="num pricing-amount-value">€499</span>
+                    <span class="per pricing-amount-period mono">/ year</span>
                 </div>
-                <footer class="pricing-card-foot">
-                    <div class="pricing-attrib">
-                        <div class="pricing-avatar mono">T</div>
-                        <div class="pricing-meta">
-                            <div class="pricing-tier mono">Team</div>
-                            <div class="pricing-role mono dim">Steuerberater &amp; agencies</div>
-                        </div>
-                    </div>
-                    <a href="mailto:hello@veritas.law?subject=Team%20Plan%20Inquiry" class="pricing-action mono" aria-label="Contact us">→</a>
+                <ul class="price-features pricing-features">
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.team.f1">Up to 5 seats</span></li>
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.team.f2">API access</span></li>
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.team.f3">Custom playbook entries</span></li>
+                    <li><span class="pf-mark bullet">+</span><span data-i18n="pricing.team.f4">Co-branded brief PDFs</span></li>
+                </ul>
+                <footer class="price-foot pricing-card-foot">
+                    <span class="price-role pricing-role mono" data-i18n="pricing.team.role">Steuerberater &amp; agencies</span>
+                    <a href="mailto:hello@veritas.law?subject=Team%20Plan%20Inquiry" class="price-arrow pricing-action mono" aria-label="Contact us">→</a>
                 </footer>
             </article>
-
         </div>
     </section>
 
     <!-- Upload / Analyzer Section -->
-    <section class="analyzer-section" id="upload">
-        <div class="section-label mono" data-i18n="analyzer.label">// Analyzer</div>
+    <section class="section analyzer-section" id="upload">
+        <div class="head-row" style="margin-bottom: 24px;">
+            <div>
+                <div class="section-label mono" data-i18n="analyzer.label">// analyzer</div>
+                <h2 class="section-title" data-i18n="analyzer.heading">Drop a contract.<br>Get a brief in seconds.</h2>
+            </div>
+        </div>
 
         <!-- macOS terminal window -->
-        <div class="terminal-window">
+        <div class="analyzer-wrap">
+        <div class="terminal-window window">
             <div class="window-bar">
                 <div class="window-dots">
-                    <span class="dot red"></span>
-                    <span class="dot yellow"></span>
-                    <span class="dot green"></span>
+                    <span class="window-dot r dot red"></span>
+                    <span class="window-dot y dot yellow"></span>
+                    <span class="window-dot g dot green"></span>
                 </div>
                 <span class="window-title mono">veritas — analyzer</span>
             </div>
-            <div class="terminal-body">
+            <div class="terminal-body window-body">
                 <!-- Upload state -->
                 <div id="upload-state">
-                    <h2 class="terminal-h2" data-i18n="analyzer.heading">Analyze your<br>contract.</h2>
+                    <div class="analyzer-lang-row">
+                        <div>
+                            <h2 class="terminal-h2" data-i18n="analyzer.subhead">Analyze your contract.</h2>
+                            <p class="mono dim" style="font-size:12px;margin-top:6px;" data-i18n="analyzer.timing">Average analysis takes 7–9 seconds.</p>
+                        </div>
+                        <label class="lang-label">
+                            <span class="dim" data-i18n="analyzer.lang_label">report:</span>
+                            <select id="languageSelect" class="mono" style="background:var(--bg-elev);border:1px solid var(--border-mid);color:var(--text-soft);padding:6px 12px;border-radius:9999px;font-family:var(--font-mono);font-size:12px;cursor:pointer;outline:none;">
+                                <option value="de">Deutsch</option>
+                                <option value="en">English</option>
+                            </select>
+                        </label>
+                    </div>
                     <div id="drop-zone" class="drop-zone">
-                        <span class="upload-icon">📄</span>
-                        <p class="mono" data-i18n="analyzer.drop">Drop your PDF contract here</p>
+                        <span class="doc-icon upload-icon"></span>
+                        <div class="drop-zone-title" data-i18n="analyzer.drop">Drop your PDF contract here</div>
+                        <div class="drop-zone-sub mono" data-i18n="analyzer.subnote">or browse from your machine — max 10 MB · German or English</div>
                         <input type="file" id="file-input" accept=".pdf" hidden>
-                        <button class="btn-browse mono" onclick="document.getElementById('file-input').click()" data-i18n="analyzer.browse">Browse files</button>
-                        <p class="mono" style="font-size:0.72rem;margin-top:1.5rem;line-height:1.6;color:#888;" data-i18n="analyzer.privacy">Your contract is sent to OpenAI for analysis and is not stored by veritas. See our Privacy Policy.</p>
+                        <button class="browse-btn btn-browse mono" onclick="document.getElementById('file-input').click()" data-i18n="analyzer.browse">Browse files →</button>
+                        <p class="privacy mono">
+                            <span data-i18n="analyzer.privacy.lead">Your contract is sent to OpenAI for analysis and is not stored by veritas. See our </span><a href="#" id="link-privacy" style="color:var(--text-soft);text-decoration:underline;text-underline-offset:3px;cursor:pointer;" data-i18n="analyzer.privacy.link">Privacy Policy</a>.
+                        </p>
+                        <button id="btn-demo-contract" class="mono" style="margin-top:16px;font-size:11px;color:var(--accent);text-decoration:underline;text-underline-offset:3px;background:transparent;border:none;cursor:pointer;font-family:var(--font-mono);" data-i18n="analyzer.demo">Or try the demo contract →</button>
                     </div>
                 </div>
 
                 <!-- Loading state -->
                 <div id="loading" class="hidden">
-                    <div class="loading-inner">
+                    <div class="loading-inner load-state">
+                        <div class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
+                            // running pipeline
+                        </div>
                         <div class="terminal-loader">
                             <div class="loader-lines">
-                                <div class="loader-line mono" data-i18n="loading.l1">$ Loading contract...</div>
-                                <div class="loader-line mono" data-i18n="loading.l2">$ Extracting clauses via GPT-4o...</div>
-                                <div class="loader-line mono" data-i18n="loading.l3">$ Running vector similarity search...</div>
-                                <div class="loader-line mono typing" data-i18n="loading.l4">$ Synthesizing risk report...</div>
+                                <div class="loader-line load-line mono" data-i18n="loading.l1">$ Loading contract...</div>
+                                <div class="loader-line load-line mono" data-i18n="loading.l2">$ Extracting clauses via GPT-4o...</div>
+                                <div class="loader-line load-line mono" data-i18n="loading.l3">$ Running vector similarity search...</div>
+                                <div class="loader-line load-line mono typing" data-i18n="loading.l4">$ Synthesizing risk report...</div>
                             </div>
-                            <div class="spinner-bar"></div>
+                            <div class="spinner-bar load-progress"><div class="load-progress-fill"></div></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Results state -->
                 <div id="results-section" class="hidden">
-                    <div class="results-header">
-                        <h2 class="terminal-h2" data-i18n="results.heading">Analysis complete.</h2>
-                        <div class="summary-pills" id="summary-pills"></div>
-                    </div>
-                    <div id="rate-benchmark-section" class="hidden" style="margin-bottom:2rem;padding:1.25rem;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
-                        <div class="mono dim" style="font-size:0.75rem;margin-bottom:0.75rem;">// rate benchmark</div>
-                        <div id="rate-benchmark-label" class="mono" style="font-size:0.85rem;margin-bottom:0.75rem;color:var(--white);"></div>
-                        <div style="position:relative;height:28px;background:rgba(255,255,255,0.05);border-radius:6px;overflow:hidden;">
-                            <div id="rate-bar-p25"   style="position:absolute;top:0;bottom:0;background:rgba(239,68,68,0.25);"></div>
-                            <div id="rate-bar-mid"   style="position:absolute;top:0;bottom:0;background:rgba(234,179,8,0.25);"></div>
-                            <div id="rate-bar-p75"   style="position:absolute;top:0;bottom:0;background:rgba(34,197,94,0.2);"></div>
-                            <div id="rate-bar-offer" style="position:absolute;top:4px;bottom:4px;width:3px;background:#fff;border-radius:2px;"></div>
-                        </div>
-                        <div id="rate-benchmark-ticks" class="mono dim" style="display:flex;justify-content:space-between;font-size:0.7rem;margin-top:0.4rem;"></div>
-                    </div>
-                    <div class="findings-list" id="findings-container"></div>
-                    <div class="brief-section">
-                        <div class="brief-header">
-                            <span class="mono dim">// negotiation_brief.txt</span>
-                            <div style="display:flex;gap:8px;">
-                                <button id="btn-download" class="btn-ghost mono" data-i18n="results.download">↓ TXT</button>
-                                <button id="btn-download-pdf" class="btn-ghost mono">↓ PDF</button>
+                    <div class="results-header results-head">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+                            <div>
+                                <div id="results-eyebrow" class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
+                                    // analysis_complete
+                                </div>
+                                <h2 class="results-title" data-i18n="results.heading">Here's what to push back on.</h2>
+                            </div>
+                            <div class="action-row">
+                                <button id="btn-rerun" class="btn-icon" title="Re-run" aria-label="Re-run">↻</button>
+                                <button id="btn-share" class="btn-icon" title="Share" aria-label="Share">↗</button>
                             </div>
                         </div>
-                        <pre id="negotiation-brief" class="mono"></pre>
+                        <div class="results-meta">
+                            <div class="summary-pills" id="summary-pills"></div>
+                            <span id="clauses-flagged" class="mono dim" style="font-size:11px;margin-left:8px;"></span>
+                        </div>
                     </div>
-                    <button id="btn-reset" class="btn-ghost mono" style="margin-top:2rem;" data-i18n="results.reset">← Analyze another</button>
+                    <div id="score-grid" class="score-grid hidden"></div>
+                    <div id="rate-benchmark-section" class="hidden">
+                        <div class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">// rate benchmark</div>
+                        <div id="rate-benchmark-label" class="mono"></div>
+                        <div class="rate-bar-wrap" style="position:relative;">
+                            <div id="rate-bar-p25"   style="position:absolute;left:0;width:0;"></div>
+                            <div id="rate-bar-mid"   style="position:absolute;left:0;width:0;"></div>
+                            <div id="rate-bar-p75"   style="position:absolute;left:0;width:0;"></div>
+                            <div id="rate-bar-offer" style="position:absolute;left:0;"></div>
+                        </div>
+                        <div id="rate-benchmark-ticks" class="mono dim"></div>
+                    </div>
+                    <div class="mono dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin:16px 0 14px;" data-i18n="results.findings_label">// findings · click to expand</div>
+                    <div class="findings findings-list" id="findings-container"></div>
+                    <div class="brief brief-section">
+                        <div class="brief-head brief-header">
+                            <span class="brief-title mono">// negotiation_brief.txt</span>
+                            <div style="display:flex;gap:8px;">
+                                <button id="btn-download" class="btn btn-ghost mono" style="padding:8px 14px;font-size:12px;" data-i18n="results.download">↓ TXT</button>
+                                <button id="btn-download-pdf" class="btn btn-ghost mono" style="padding:8px 14px;font-size:12px;">↓ PDF</button>
+                                <button id="btn-brief-copy" class="btn btn-ghost mono" style="padding:8px 14px;font-size:12px;" data-i18n="results.copy">Copy</button>
+                            </div>
+                        </div>
+                        <pre id="negotiation-brief" class="brief-body mono"></pre>
+                    </div>
+                    <div class="action-row" style="margin-top:28px;">
+                        <button id="btn-reset" class="btn btn-ghost mono" data-i18n="results.reset">← Analyze another</button>
+                        <button id="btn-send-client" class="btn btn-primary mono" data-i18n="results.send_client">Send to client →</button>
+                    </div>
                 </div>
             </div>
+        </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="site-footer">
-        <div class="footer-grid">
+    <footer class="footer site-footer">
+        <div class="footer-inner footer-grid">
             <div class="footer-brand">
-                <span class="mono">veritas</span>
-                <p class="mono dim" data-i18n="footer.tagline">Intelligent German freelance contract risk analysis. Not legal advice.</p>
+                <span class="brand"><span class="brand-mark">V</span><span>veritas</span></span>
+                <p class="footer-tagline mono dim" data-i18n="footer.tagline">Intelligent German freelance contract risk analysis. Not legal advice — get a Fachanwalt for that.</p>
             </div>
-            <div class="footer-links">
-                <span class="mono dim" data-i18n="footer.poweredby">Powered by</span>
-                <div class="tech-tags">
-                    <span class="mono tech-tag">GPT-4o</span>
-                    <span class="mono tech-tag">Firestore</span>
-                    <span class="mono tech-tag">FastAPI</span>
-                    <span class="mono tech-tag">Firebase</span>
+            <div class="footer-stack footer-links">
+                <span class="mono dim" data-i18n="footer.poweredby">// powered by</span>
+                <div class="tech-row tech-tags">
+                    <span class="tech-tag mono">GPT-4o</span>
+                    <span class="tech-tag mono">Firestore</span>
+                    <span class="tech-tag mono">FastAPI</span>
+                    <span class="tech-tag mono">Firebase</span>
                 </div>
             </div>
         </div>
-        <div class="footer-bottom mono dim" data-i18n="footer.legal">© 2026 Nova School of Business and Economics — For educational purposes only.</div>
+        <div class="footer-legal footer-bottom mono dim" data-i18n="footer.legal">© 2026 Nova School of Business and Economics — For educational purposes only · Not legal advice</div>
     </footer>
 
     <!-- Auth Modal -->
     <div id="auth-modal" class="modal-overlay hidden">
-        <div class="modal-content">
+        <div class="modal modal-content">
             <button id="modal-close" class="modal-close">&times;</button>
-            <h2 id="modal-title" class="mono">Log In</h2>
-            <form id="auth-form" class="auth-form">
-                <input type="email" id="auth-email" placeholder="Email Address" required>
-                <input type="password" id="auth-password" placeholder="Password" required>
-                <div id="auth-error" class="auth-error hidden"></div>
-                <button type="submit" id="auth-submit" class="btn-primary mono">Log In</button>
+            <div class="modal-eyebrow mono">// authenticate</div>
+            <h2 id="modal-title" class="modal-title">Welcome back</h2>
+            <form id="auth-form" class="auth-form modal-form">
+                <input class="modal-input" type="email" id="auth-email" placeholder="Email address" required>
+                <input class="modal-input" type="password" id="auth-password" placeholder="Password" required>
+                <div id="auth-error" class="auth-error modal-error hidden"></div>
+                <button type="submit" id="auth-submit" class="modal-submit mono">Log in →</button>
             </form>
-            <div class="auth-links">
-                <a href="#" id="link-forgot-password" class="mono dim">Forgot Password?</a>
-                <a href="#" id="link-toggle-mode" class="mono dim">Create an account</a>
+            <div class="auth-links modal-links">
+                <a href="#" id="link-forgot-password" class="mono dim">Forgot password?</a>
+                <a href="#" id="link-toggle-mode" class="mono dim">Create an account →</a>
             </div>
-            <div class="auth-divider mono dim"><span>OR</span></div>
-            <button id="btn-google-login" class="btn-ghost mono auth-google-btn">
-                <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <div class="auth-divider modal-divider mono dim"><span>OR</span></div>
+            <button id="btn-google-login" class="auth-google-btn btn-google mono">
+                <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                 Continue with Google
             </button>
         </div>
     </div>
 
+    <!-- Privacy Modal (refined, sectioned) -->
+    <div id="privacy-modal" class="modal-overlay hidden">
+        <div class="modal privacy-modal">
+            <button id="privacy-modal-close" class="modal-close">&times;</button>
+            <div class="modal-eyebrow mono">// privacy_policy.md</div>
+            <h2 class="modal-title">Privacy Policy</h2>
+            <div class="privacy-meta mono dim">Last updated · 2026-04-12 · v1.3</div>
+
+            <div class="privacy-body">
+                <section>
+                    <h3>1 · TL;DR</h3>
+                    <p>Your contract is sent to OpenAI for analysis. We do <strong>not</strong> store the file. We store metadata about the analysis (filename, timestamp, risk counts) so you can find it again on your dashboard. We never sell your data.</p>
+                </section>
+                <section>
+                    <h3>2 · Who we are</h3>
+                    <p>veritas is a research project of Nova School of Business and Economics, Lisbon. Data controller under Art. 4 GDPR: <span class="mono">veritas-team@novasbe.pt</span>.</p>
+                </section>
+                <section>
+                    <h3>3 · What we collect</h3>
+                    <ul>
+                        <li><strong>Account data</strong> — email, hashed password (bcrypt), language preference.</li>
+                        <li><strong>Analysis metadata</strong> — original filename, file size, timestamp, count of HIGH/MED/LOW findings.</li>
+                        <li><strong>Usage</strong> — aggregate page views via Plausible (EU-hosted, no IP storage, no cookies).</li>
+                        <li><strong>We do <em>not</em> collect</strong> — the contract PDF itself, billing info (Stripe holds that), or location data.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>4 · Where your contract goes</h3>
+                    <p>When you click "Analyze," the PDF is uploaded to our backend on Google Cloud Run (Frankfurt, <span class="mono">europe-west1</span>), parsed in memory, and the extracted text is sent to OpenAI's API for clause structuring and embedding.</p>
+                    <p>OpenAI does not train on API data per their <a href="https://openai.com/policies/api-data-usage-policies" target="_blank" rel="noopener">Enterprise Data Promise</a>. Embeddings, not the raw text, are stored in our Firestore vector index.</p>
+                </section>
+                <section>
+                    <h3>5 · How long we keep data</h3>
+                    <ul>
+                        <li>Account: until you delete it (Settings → Danger Zone).</li>
+                        <li>Analysis metadata: 12 months, then auto-purged.</li>
+                        <li>Server logs: 14 days.</li>
+                        <li>Original PDF text: never written to disk.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>6 · Your rights under GDPR</h3>
+                    <p>Articles 15–22 GDPR apply: access, rectification, erasure, restriction, portability, objection. Email <span class="mono">veritas-team@novasbe.pt</span> and we'll respond within 30 days. You can also lodge a complaint with the BfDI (Germany) or CNPD (Portugal).</p>
+                </section>
+                <section>
+                    <h3>7 · Cookies</h3>
+                    <p>One essential session cookie (<span class="mono">veritas-session</span>, 14d). Optional analytics via Plausible — cookieless. We never use third-party tracking pixels or ad networks.</p>
+                </section>
+                <section>
+                    <h3>8 · Changes</h3>
+                    <p>If we change this policy, we'll surface it via the cookie banner on your next visit. The version above is canonical.</p>
+                </section>
+                <section class="privacy-foot">
+                    <span class="mono dim">// EOF</span>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Banner -->
+    <div id="cookie-banner" class="cookie-banner hidden" role="dialog" aria-label="Cookie preferences">
+        <div class="cookie-inner">
+            <div class="cookie-text">
+                <div class="mono dim cookie-eyebrow">// privacy first</div>
+                <p class="cookie-msg">
+                    We use <strong>essential</strong> cookies to keep you logged in and <strong>analytics</strong> cookies (Plausible, EU-hosted) to understand which pages help freelancers most. No tracking pixels, no ad networks.
+                </p>
+            </div>
+            <div class="cookie-actions">
+                <button class="btn btn-ghost cookie-btn mono" id="cookie-reject">Reject non-essential</button>
+                <button class="btn btn-primary cookie-btn mono" id="cookie-accept">Accept all</button>
+                <a class="cookie-link mono" id="cookie-policy-link">Privacy Policy ↗</a>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module" src="auth.js?v=4"></script>
-    <script type="module" src="app.js?v=9"></script>
+    <script type="module" src="app.js?v=10"></script>
+    <script type="module" src="policies.js?v=1"></script>
 </body>
 </html>

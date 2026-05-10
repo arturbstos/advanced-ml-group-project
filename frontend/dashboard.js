@@ -25,7 +25,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     window.location.href = "index.html";
                     return;
                 }
-                
+
+                // Show user email under the dashboard title
+                const subEmail = document.getElementById('dash-sub-email');
+                if (subEmail && user.email) subEmail.textContent = user.email;
+
                 if (!authChecked) {
                     authChecked = true;
                     await Promise.all([fetchAnalyses(user), fetchProfile(user)]);
@@ -47,10 +51,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             };
 
-            // Account modal
+            // Account modal — use window.firebaseAuth.currentUser since `user`
+            // from the onAuthStateChanged callback is out of scope here.
             const accountModal = document.getElementById('account-modal');
+            const _u = () => window.firebaseAuth?.currentUser;
+
             document.getElementById('btn-account').onclick = () => {
-                document.getElementById('account-email').textContent = user.email || '';
+                const u = _u();
+                if (!u) return;
+                document.getElementById('account-email').textContent = u.email || '';
                 accountModal.style.display = 'block';
             };
             document.getElementById('account-modal-close').onclick = () => {
@@ -59,12 +68,14 @@ document.addEventListener("DOMContentLoaded", () => {
             accountModal.addEventListener('click', e => { if (e.target === accountModal) accountModal.style.display = 'none'; });
 
             document.getElementById('btn-change-password').onclick = async () => {
+                const u = _u();
+                if (!u) return;
                 const pw = document.getElementById('new-password').value;
                 const msg = document.getElementById('password-msg');
                 msg.style.display = 'block';
                 if (pw.length < 6) { msg.style.color = '#ef4444'; msg.textContent = 'Password must be at least 6 characters.'; return; }
                 try {
-                    await updatePassword(user, pw);
+                    await updatePassword(u, pw);
                     msg.style.color = '#22c55e'; msg.textContent = 'Password updated successfully.';
                     document.getElementById('new-password').value = '';
                 } catch (e) {
@@ -77,13 +88,15 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             document.getElementById('btn-delete-account').onclick = async () => {
+                const u = _u();
+                if (!u) return;
                 if (!confirm('Are you sure? This will permanently delete your account and all your analyses.')) return;
                 try {
-                    const token = await user.getIdToken();
+                    const token = await u.getIdToken();
                     // Delete all Firestore data first
                     const analyses = await fetch(`${API_URL}/api/analyses`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
                     await Promise.all(analyses.map(a => fetch(`${API_URL}/api/analyses/${a.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })));
-                    await deleteUser(user);
+                    await deleteUser(u);
                     window.location.href = 'index.html';
                 } catch (e) {
                     if (e.code === 'auth/requires-recent-login') {
@@ -197,28 +210,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderCard(analysis) {
-            const date = new Date(analysis.timestamp).toLocaleDateString(undefined, { 
-                year: 'numeric', month: 'short', day: 'numeric' 
+            const date = new Date(analysis.timestamp).toLocaleDateString(undefined, {
+                year: 'numeric', month: 'short', day: 'numeric'
             });
 
-            const card = document.createElement('div');
+            const card = document.createElement('article');
             card.className = 'analysis-card';
-            
+
             const highCount = analysis.high_risk_count || 0;
             const medCount = analysis.medium_risk_count || 0;
-            
+
             let statsHtml = '';
-            if (highCount > 0) statsHtml += `<span class="stat-pill stat-high">${highCount} HIGH</span>`;
-            if (medCount > 0) statsHtml += `<span class="stat-pill stat-med">${medCount} MED</span>`;
-            if (highCount === 0 && medCount === 0) statsHtml += `<span class="stat-pill stat-low">ALL CLEAR</span>`;
+            if (highCount > 0) statsHtml += `<span class="stat-pill stat-high mono">${highCount} HIGH</span>`;
+            if (medCount > 0) statsHtml += `<span class="stat-pill stat-med mono">${medCount} MED</span>`;
+            if (highCount === 0 && medCount === 0) statsHtml += `<span class="stat-pill stat-low mono">ALL CLEAR</span>`;
+
+            const safeName = (analysis.filename || 'Unknown Contract')
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
             card.innerHTML = `
-                <div class="analysis-meta mono" style="display:flex;justify-content:space-between;align-items:center;">
-                    <span>${date}</span>
-                    <button class="btn-delete-analysis mono" title="Delete analysis" style="background:none;border:none;color:#666;cursor:pointer;font-size:1rem;padding:0 4px;line-height:1;" data-id="${analysis.id}">✕</button>
+                <div class="file-row">
+                    <span class="file-icon mono">PDF</span>
+                    <span class="filename analysis-title">${safeName}</span>
+                    <button class="btn-delete-analysis mono" title="Delete analysis" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 4px;line-height:1;align-self:flex-start;" data-id="${analysis.id}">✕</button>
                 </div>
-                <div class="analysis-title">${analysis.filename || 'Unknown Contract'}</div>
-                <div class="analysis-stats mono">${statsHtml}</div>
+                <div class="meta analysis-meta mono">
+                    <span>${date}</span>
+                </div>
+                <div class="stats analysis-stats">${statsHtml}</div>
             `;
 
             card.querySelector('.btn-delete-analysis').addEventListener('click', async (e) => {
@@ -239,7 +258,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             card.onclick = () => {
                 if (analysis.report && analysis.report.findings) {
-                    showReportModal(analysis);
+                    // Reuse the embedded analyzer's refined ResultsView so
+                    // saved analyses get the same verdict pill, score grid,
+                    // action refboxes, diff blocks etc. as a fresh run.
+                    if (typeof window.veritasShowAnalysis === 'function') {
+                        window.veritasShowAnalysis(analysis.filename, analysis.report);
+                        document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        showReportModal(analysis);
+                    }
                 } else if (analysis.report && analysis.report.brief) {
                     // Legacy: report saved without structured findings
                     downloadBrief(analysis.report.brief, analysis.filename);
