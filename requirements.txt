@@ -14,7 +14,9 @@ tenacity
 presidio-analyzer
 presidio-anonymizer
 spacy>=3.7,<3.9
+langdetect
 de_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.7.0/de_core_news_sm-3.7.0-py3-none-any.whl
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 
 # Firebase / Firestore
 firebase-admin==6.5.0

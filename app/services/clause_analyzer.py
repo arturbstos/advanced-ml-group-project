@@ -14,6 +14,7 @@ text does not explicitly flag it.
 """
 import asyncio
 import os
+import re
 from typing import List, Optional
 
 from openai import AsyncOpenAI
@@ -72,7 +73,7 @@ _RATE_FINDING_COPY = {
 class Finding(BaseModel):
     risk: str = Field(description="One of 'high', 'medium', or 'low'.")
     title: str = Field(description="A short title summarising the issue, strictly in the requested target language.")
-    clause: str = Field(description="The verbatim clause being analysed. Keep it in its ORIGINAL language (German source). Do NOT translate or paraphrase the source clause.")
+    clause: str = Field(description="The verbatim clause being analysed. Keep it in its ORIGINAL language (German or English). Do NOT translate or paraphrase the source clause.")
     body: str = Field(description="The legal reasoning, 2–3 sentences, strictly translated into the target language.")
     redline: Optional[str] = Field(default=None, description="A concrete replacement sentence, strictly in the target language, or null.")
     statute: Optional[str] = Field(default=None, description="Statute citation (e.g. '§ 7 SGB IV'). Statute references stay in their canonical German form.")
@@ -83,18 +84,18 @@ class Finding(BaseModel):
 def _build_system_prompt(target_language: str) -> str:
     lang = _LANG_NAMES.get(target_language, "English")
     low_label = _LOW_RISK_TITLE.get(target_language, "Within standard scope")
-    return f"""You are a German contract-law expert analyzing freelance (freie Mitarbeit) contracts.
+    return f"""You are a contract-law expert specializing in European freelance contracts (German Freie Mitarbeit and equivalent English-law arrangements).
 
 You will receive:
-  1. A specific clause from a German freelancer contract.
+  1. A specific clause from a freelancer contract (may be in German or English).
   2. Up to 3 candidate playbook entries (patterns of known risky clauses, with legal reasoning and redlines).
   3. Optional statutory references (BGB, SGB IV, UrhG, etc.).
   4. Optional rate-benchmark context when the clause concerns compensation.
 
 Output ONE Finding. Classify risk as follows:
-  - "high"   — violates statute, triggers Scheinselbstständigkeit, or causes material economic harm.
-  - "medium" — legally valid but suboptimal: reduces entitlements or leverage, departs from industry norms.
-  - "low"    — within standard scope; no action required.
+  - "high"   — violates statute, causes material economic harm, or severely restricts the freelancer's rights (e.g. full IP transfer without fair compensation, unenforceable non-compete, liability cap below 3 months' fees).
+  - "medium" — legally valid but suboptimal: reduces entitlements or leverage, departs from industry norms (e.g. payment terms >30 days, auto-renewal with long opt-out window, broad non-solicitation).
+  - "low"    — genuinely within standard scope; no meaningful negotiation upside.
 
 CRITICAL: You will receive legal context from our database that contains BOTH English and German text.
 You MUST translate and synthesize your entire response — including the "title", "body" (legal reasoning),
@@ -102,11 +103,13 @@ and "redline" — STRICTLY into {lang}. Do NOT mix languages in the JSON output.
 output in {lang}.
 
 Rules:
-  - If none of the playbook candidates are a real match, return risk="low", title="{low_label}".
-  - Quote the clause verbatim in the "clause" field — keep it in its ORIGINAL German source language; do NOT translate or paraphrase the source clause.
+  - Use playbook candidates as supporting context, but rely on your own legal expertise to assess risk.
+  - "high" and "medium" require a SPECIFIC, ARTICULABLE legal concern that materially disadvantages the freelancer. Do not flag a clause merely because it could theoretically be improved.
+  - Return risk="low", title="{low_label}" for clauses that are genuinely standard boilerplate with no meaningful negotiation upside. Examples that are almost always low: standard severability, mutual non-disparagement, symmetric waiver language, boilerplate force majeure, standard entire-agreement recitals, and symmetric notice-delivery requirements.
+  - ANTI-HALLUCINATION: The "clause" field MUST be copied verbatim from the CLAUSE text provided in this message. Do NOT invent, recall from memory, translate, or paraphrase the source text. If in doubt, use the first 200 characters of the provided CLAUSE exactly as given.
   - The "body" must be 2–3 sentences in {lang}, citing the statute or benchmark source where applicable.
   - "redline" must be a concrete replacement sentence in {lang}, or null. Statute references inside it (e.g. "§ 7 SGB IV") stay in canonical German form.
-  - "action" must be ONE sentence in {lang} describing the strategic move the freelancer should make in negotiation (e.g. "Negotiate removal of fixed hours and replace with deliverables-based language"). It is distinct from the redline (which is the literal replacement text). For risk="low" findings, return null.
+  - "action" must be ONE sentence in {lang} describing the strategic move the freelancer should make in negotiation. Distinct from the redline. For risk="low" findings, return null.
   - "source" must cite either the matched playbook entry (e.g. "Playbook PB-001"), the benchmark (e.g. "Freelancer-Kompass 2025"), or "Statutory default".
 """
 
@@ -171,6 +174,52 @@ def _build_rate_context(
 def _clause_concerns_rate(clause: str) -> bool:
     low = clause.lower()
     return any(kw in low for kw in _RATE_KEYWORDS)
+
+
+_RISK_ORDER = {"high": 0, "medium": 1, "low": 2}
+_STOP_WORDS = {"the", "a", "an", "of", "for", "in", "and", "or", "to", "is", "are",
+               "that", "this", "by", "on", "at", "with", "from", "as", "its", "any"}
+
+
+def _section_of(f: Finding) -> Optional[str]:
+    """Return the top-level section number from the clause text (e.g. '2' for '2.3 ...')."""
+    m = re.match(r"^(\d{1,2})\.\d{1,2}", f.clause.strip())
+    return m.group(1) if m else None
+
+
+def _title_words(f: Finding) -> set:
+    return {w.lower() for w in re.findall(r"[a-zA-Z]+", f.title) if w.lower() not in _STOP_WORDS}
+
+
+def _are_duplicates(a: Finding, b: Finding) -> bool:
+    """True if two findings address the same legal issue in the same contract section."""
+    sec_a, sec_b = _section_of(a), _section_of(b)
+    if sec_a is None or sec_b is None or sec_a != sec_b:
+        return False
+    # Same non-null statute in the same section → same issue
+    if a.statute and b.statute and a.statute.strip() == b.statute.strip():
+        return True
+    # High title-word overlap in the same section → same issue
+    wa, wb = _title_words(a), _title_words(b)
+    if wa and wb and len(wa & wb) / min(len(wa), len(wb)) >= 0.55:
+        return True
+    return False
+
+
+def _deduplicate(findings: List[Finding]) -> List[Finding]:
+    """Keep only the highest-severity finding per unique legal issue per section."""
+    sorted_f = sorted(findings, key=lambda f: _RISK_ORDER.get(f.risk, 2))
+    kept: List[Finding] = []
+    for f in sorted_f:
+        if not any(_are_duplicates(f, k) for k in kept):
+            kept.append(f)
+
+    def _sort_key(f: Finding) -> tuple:
+        m = re.match(r"^(\d{1,2})\.(\d{1,2})", f.clause.strip())
+        return (int(m.group(1)), int(m.group(2))) if m else (999, 999)
+
+    kept.sort(key=_sort_key)
+    return kept
 
 
 async def analyze(
@@ -271,4 +320,5 @@ async def analyze(
     )
     findings.extend(clause_findings)
 
+    findings = _deduplicate(findings)
     return findings, rate_bench

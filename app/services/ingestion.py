@@ -21,20 +21,27 @@ class ContractExtraction(BaseModel):
     payment_terms_days: int
 
 
-# Split before paragraph breaks OR § markers. The lookahead on § keeps
-# the §-prefix attached to its section.
-_CLAUSE_SPLIT = re.compile(r"\n\s*\n+|(?=§)")
-_MIN_CHUNK_LEN = 50
+# Split on:
+#   - blank lines (digitally-created PDFs with preserved whitespace)
+#   - numbered sub-clauses: "1.1 ", "12.3 " at start of line (pdfplumber PDFs)
+#   - top-level sections: "1. WORD" at start of line
+#   - § markers (German statutes)
+_CLAUSE_SPLIT = re.compile(
+    r"\n\s*\n+"                        # blank-line paragraph break
+    r"|(?=\n§)"                        # before § markers
+    r"|(?=\n\d{1,2}\.\d{1,2}\s)"      # before sub-clauses: 1.1 / 12.3
+    r"|(?=\n\d{1,2}\.\s+[A-Z])"       # before top-level: 1. ENGAGEMENT
+)
+_MIN_CHUNK_LEN = 80
 
 
 def chunk_contract_text(text: str) -> List[str]:
     """Split contract text into clause-sized chunks deterministically.
 
-    No LLM is involved — output is verbatim source text grouped into
-    units large enough for meaningful embedding (>= 50 chars) but small
-    enough to address individually. Fragments shorter than the floor
-    are merged into the preceding chunk so we never embed
-    "§ 1" or "Definitions." as a standalone vector.
+    Handles both blank-line-separated text (from digitally-created PDFs)
+    and single-newline text produced by pdfplumber (which strips blank lines).
+    Each numbered sub-clause (e.g. "1.1", "7.2") becomes its own chunk.
+    Fragments shorter than the floor are merged into the preceding chunk.
     """
     if not text or not text.strip():
         return []
