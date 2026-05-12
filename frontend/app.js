@@ -324,6 +324,9 @@ function renderRateBenchmark(bench) {
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;">
         <span class="rate-label mono">// ${profileLine}</span>
         <span class="rate-summary mono">${summaryLine}</span>
+      </div>
+      <div style="margin-top:8px;padding:6px 10px;border-left:2px solid var(--amber);font-size:12px;font-family:var(--font-mono);color:var(--amber);line-height:1.5;">
+        ⚠ p25/p75 are modeled estimates (±15% around the experience-adjusted median), not observed survey percentiles.
       </div>`;
 
     // 5 ticks: min · p25 · median · p75 · max
@@ -346,17 +349,6 @@ function renderRateBenchmark(bench) {
     }
     sourceLine.textContent = `source · ${source}`;
 
-    // Modeling footnote (smaller, after source line)
-    let footnote = document.getElementById('rate-benchmark-footnote');
-    if (!footnote) {
-        footnote = document.createElement('div');
-        footnote.id = 'rate-benchmark-footnote';
-        footnote.className = 'mono dim';
-        footnote.style.cssText = 'font-size:10px;margin-top:6px;line-height:1.5;';
-        footnote.textContent = 'p25/p75 modeled ±15% around experience-adjusted median. Not observed percentiles.';
-        sourceLine.after(footnote);
-    }
-
     section.classList.remove('hidden');
 }
 
@@ -378,34 +370,31 @@ function _escape(s) {
         .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-/* Deterministic per-finding 0–10 severity score, derived from risk + title hash.
- * The backend doesn't compute this today — synthesizing keeps the design's
- * numeric severity column alive without a backend round-trip. If/when a real
- * `score` field arrives in the Finding payload, we use it directly. */
+/* Severity score mapped from the LLM-assigned risk tier.
+ * high=9.0, medium=5.5, low=2.0. Displayed as X / 10 to convey relative
+ * severity — not independently computed. Uses the backend `score` field
+ * if one is ever added to the Finding schema. */
 function _findingScore(f) {
     if (typeof f.score === 'number') return f.score;
-    const seed = (f.title || '').split('').reduce((a, c) => (a + c.charCodeAt(0)) | 0, 0);
-    const variation = (Math.abs(seed) % 16) / 10; // 0.0 - 1.5
-    if (f.risk === 'high')   return Math.min(9.5, 8.0 + variation);
-    if (f.risk === 'medium') return Math.min(6.9, 4.8 + variation);
-    return Math.min(3.0, 1.0 + variation);
+    if (f.risk === 'high')   return 9.0;
+    if (f.risk === 'medium') return 5.5;
+    return 2.0;
 }
 
 function _findingTag(f) {
-    const score = _findingScore(f);
-    if (f.risk === 'high')   return score >= 9 ? 'CRITICAL' : 'HIGH';
+    if (f.risk === 'high')   return 'CRITICAL';
     if (f.risk === 'medium') return 'NEGOTIATE';
     return 'OK';
 }
 
 const _VERDICT_COPY = {
     en: {
-        high: { label: 'DO NOT SIGN AS-IS', cls: 'high' },
+        high: { label: 'MATERIAL RISKS FOUND', cls: 'high' },
         med:  { label: 'NEGOTIATE BEFORE SIGNING', cls: 'med' },
         low:  { label: 'SAFE TO SIGN', cls: 'low' },
     },
     de: {
-        high: { label: 'NICHT IN DIESER FORM UNTERZEICHNEN', cls: 'high' },
+        high: { label: 'WESENTLICHE RISIKEN GEFUNDEN', cls: 'high' },
         med:  { label: 'VOR DER UNTERSCHRIFT VERHANDELN', cls: 'med' },
         low:  { label: 'UNTERSCHRIFTSREIF', cls: 'low' },
     },
@@ -615,7 +604,7 @@ function renderResults(data) {
               ${statuteLine}
             </div>
             <div class="finding-sev" style="color:${sevColor};">
-              <span class="num">${sevScore}</span><span style="color:var(--dim);"> / 10</span>
+              <span class="num">${sevScore}</span><span style="color:var(--dim);" title="Derived from risk tier (high=9.0 · medium=5.5 · low=2.0)"> / 10</span>
               <div class="mono" style="font-size:9.5px;letter-spacing:0.12em;font-weight:600;margin-top:2px;">${sevTag}</div>
             </div>
             <button class="finding-toggle" aria-label="Toggle details">▾</button>

@@ -1,0 +1,96 @@
+{
+  "version": "1.0",
+  "description": "Gold annotation set for Veritas clause analyzer. 10 clauses across 6 risk categories. Each entry specifies the expected risk tier, at least one statute that must appear in the citation, and keywords that should appear in the finding title or body.",
+  "clauses": [
+    {
+      "id": "GS-001",
+      "category": "scheinselbststaendigkeit",
+      "clause": "Der Auftragnehmer ist verpflichtet, seine Leistungen ausschließlich in den Räumlichkeiten des Auftraggebers zu erbringen und dort werktäglich zwischen 9:00 und 18:00 Uhr anwesend zu sein. Urlaub ist vorab mit dem Auftraggeber abzustimmen.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["§ 7", "SGB IV"],
+      "expected_keywords_any": ["scheinselbst", "false self", "eingliederung", "integration", "weisungsgebunden"],
+      "rationale": "Fixed hours + mandatory presence at client site + vacation approval = classic Scheinselbstständigkeit indicators under § 7 SGB IV."
+    },
+    {
+      "id": "GS-002",
+      "category": "intellectual_property",
+      "clause": "Sämtliche im Rahmen dieser Zusammenarbeit erstellten Werke, Entwicklungen und Arbeitsergebnisse gehen mit ihrer Entstehung vollständig und unwiderruflich auf den Auftraggeber über. Der Auftragnehmer verzichtet auf alle damit verbundenen Urheberpersönlichkeitsrechte.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["UrhG", "§ 29"],
+      "expected_keywords_any": ["urheber", "ip", "intellectual property", "persönlichkeitsrecht", "moral right"],
+      "rationale": "Full IP transfer + waiver of moral rights. Urheberpersönlichkeitsrechte are inalienable under § 29 UrhG — the waiver is void."
+    },
+    {
+      "id": "GS-003",
+      "category": "liability",
+      "clause": "Der Auftragnehmer haftet gegenüber dem Auftraggeber für alle Schäden, die aus der Verletzung vertraglicher oder gesetzlicher Pflichten entstehen, in unbeschränkter Höhe, einschließlich entgangenen Gewinns und mittelbarer Schäden.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 276"],
+      "expected_keywords_any": ["haftung", "liability", "unbeschränkt", "unlimited", "schadensersatz"],
+      "rationale": "Unlimited liability including consequential loss and lost profit is materially unfair; market standard caps at 3–6 months' fees."
+    },
+    {
+      "id": "GS-004",
+      "category": "payment_terms",
+      "clause": "Rechnungen sind innerhalb von 60 Tagen nach Rechnungseingang und schriftlicher Abnahme durch den Auftraggeber zahlbar.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB", "§ 286"],
+      "expected_keywords_any": ["zahlung", "payment", "fälligkeit", "due", "60 tage", "60 days"],
+      "rationale": "60-day payment terms significantly exceed the 30-day EU/BGB norm (§ 286 Abs. 3 BGB) and disadvantage freelancer cash flow."
+    },
+    {
+      "id": "GS-005",
+      "category": "non_compete",
+      "clause": "Der Auftragnehmer verpflichtet sich, für die Dauer von 24 Monaten nach Vertragsende keine Tätigkeit für Wettbewerber des Auftraggebers in Deutschland aufzunehmen, ohne dass eine Karenzentschädigung gewährt wird.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["GewO", "§ 74", "BGB"],
+      "expected_keywords_any": ["wettbewerb", "non-compete", "karenz", "entschädigung", "wettbewerbsverbot"],
+      "rationale": "Post-contractual non-compete without Karenzentschädigung is void for employees under § 74 HGB; for freelancers it is challengeable under § 138 BGB as disproportionate."
+    },
+    {
+      "id": "GS-006",
+      "category": "ip_license",
+      "clause": "Der Auftragnehmer räumt dem Auftraggeber ein einfaches, zeitlich auf die Vertragslaufzeit beschränktes Nutzungsrecht an den erstellten Werken ein. Eine Übertragung auf Dritte ist ausgeschlossen.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["nutzungsrecht", "lizenz", "license", "standard"],
+      "rationale": "Simple non-exclusive license limited to the contract term is standard and balanced — should be flagged low."
+    },
+    {
+      "id": "GS-007",
+      "category": "acceptance_werkvertrag",
+      "clause": "Die Abnahme gilt als erteilt, wenn der Auftraggeber nicht binnen 30 Tagen nach Lieferung schriftlich konkrete Mängel rügt. Eine pauschale Ablehnung gilt nicht als Mängelrüge.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["abnahme", "acceptance", "mängel", "defect", "rüge"],
+      "rationale": "Deemed-acceptance after 30 days with concrete defect requirement is a balanced clause protecting the freelancer from indefinite acceptance delays."
+    },
+    {
+      "id": "GS-008",
+      "category": "termination",
+      "clause": "Der Auftraggeber ist berechtigt, den Vertrag jederzeit und ohne Einhaltung einer Frist fristlos zu kündigen. In diesem Fall entfällt der Anspruch des Auftragnehmers auf Zahlung bereits erbrachter, aber noch nicht abgenommener Leistungen.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 648"],
+      "expected_keywords_any": ["kündigung", "termination", "vergütung", "payment", "fristlos", "erbrachte leistungen"],
+      "rationale": "Unilateral termination without notice combined with forfeiture of payment for completed but unaccepted work violates § 648 BGB (Freier Dienstvertrag) or § 649 BGB (Werkvertrag)."
+    },
+    {
+      "id": "GS-009",
+      "category": "confidentiality",
+      "clause": "Der Auftragnehmer verpflichtet sich, alle im Rahmen der Zusammenarbeit erlangten Informationen vertraulich zu behandeln. Die Geheimhaltungspflicht gilt für einen Zeitraum von 2 Jahren nach Vertragsende und erstreckt sich auf alle als vertraulich gekennzeichneten oder erkennbar vertraulichen Informationen.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["vertraulich", "confidential", "geheimhalt", "standard"],
+      "rationale": "2-year post-contract confidentiality limited to marked or recognizably confidential information is standard market practice."
+    },
+    {
+      "id": "GS-010",
+      "category": "working_time",
+      "clause": "Der Auftragnehmer ist verpflichtet, wöchentlich mindestens 40 Stunden ausschließlich für den Auftraggeber tätig zu sein. Nebentätigkeiten, auch für andere Auftraggeber, bedürfen der vorherigen schriftlichen Zustimmung.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["SGB IV", "§ 7"],
+      "expected_keywords_any": ["scheinselbst", "false self", "40 stunden", "stunden", "exklusivität", "exclusivity", "nebentätigkeit"],
+      "rationale": "Mandatory 40h/week exclusivity + pre-approval for other clients = Scheinselbstständigkeit risk and restricts the freelancer's economic independence."
+    }
+  ]
+}
