@@ -26,11 +26,13 @@ import json
 import os
 import sys
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-GOLD_PATH = Path(__file__).parent / "gold_set.json"
+GOLD_PATH    = Path(__file__).parent / "gold_set.json"
 RESULTS_PATH = Path(__file__).parent / "last_eval_results.json"
+HISTORY_PATH = Path(__file__).parent / "eval_history.json"
 PASS_THRESHOLD = 0.70
 
 
@@ -203,12 +205,36 @@ def main_http(gold_clauses, url: str, token: str):
     return results
 
 
+def _append_history(metrics: dict, mode: str):
+    """Append a timestamped summary to eval_history.json for trend tracking."""
+    entry = {
+        "timestamp":   datetime.utcnow().isoformat() + "Z",
+        "mode":        mode,
+        "n":           metrics["n"],
+        "risk_acc":    round(metrics["risk_acc"],    4),
+        "statute_hit": round(metrics["statute_hit"], 4),
+        "keyword_hit": round(metrics["keyword_hit"], 4),
+        "precision":   round(metrics["precision"],   4),
+        "pass":        metrics["precision"] >= PASS_THRESHOLD,
+    }
+    history = []
+    if HISTORY_PATH.exists():
+        with open(HISTORY_PATH) as f:
+            history = json.load(f)
+    history.append(entry)
+    with open(HISTORY_PATH, "w") as f:
+        json.dump(history, f, indent=2)
+    print(f"History entry appended to {HISTORY_PATH}  ({len(history)} runs total)")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Veritas gold-set evaluator")
     parser.add_argument("--mode", choices=["direct", "http"], default="direct",
                         help="'direct' imports the pipeline; 'http' calls a running server")
     parser.add_argument("--url",   default="http://localhost:8000", help="Base URL (http mode only)")
     parser.add_argument("--token", default="",                       help="Firebase ID token (http mode only)")
+    parser.add_argument("--no-history", action="store_true",
+                        help="Skip appending results to eval_history.json")
     args = parser.parse_args()
 
     with open(GOLD_PATH) as f:
@@ -226,9 +252,13 @@ if __name__ == "__main__":
     metrics = _run_evaluation(clauses, results)
     _print_report(metrics)
 
-    # Persist for CI artifact inspection
+    # Persist latest results for CI artifact inspection
     with open(RESULTS_PATH, "w") as f:
         json.dump(metrics, f, indent=2, default=str)
     print(f"Results written to {RESULTS_PATH}")
+
+    # Append to history for trend tracking
+    if not args.no_history:
+        _append_history(metrics, args.mode)
 
     sys.exit(0 if metrics["precision"] >= PASS_THRESHOLD else 1)

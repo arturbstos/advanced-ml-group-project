@@ -1,10 +1,16 @@
 # app/main.py
+import io
+import logging
 import os
 import shutil
+import sys
 import tempfile
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+logger = logging.getLogger("veritas.api")
 
 # Load .env BEFORE importing app.services / db modules. Several of them
 # instantiate AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY")) at import
@@ -33,6 +39,7 @@ _db = gc_firestore.AsyncClient(database="contractdb")
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Pipeline: ingest -> analyze -> assemble report
@@ -73,15 +80,12 @@ security = HTTPBearer(auto_error=False)
 def get_current_user(cred: HTTPAuthorizationCredentials = Depends(security)):
     """Extracts UID from Firebase ID token if present."""
     if not cred:
-        print("DEBUG: get_current_user -> No credentials provided")
         return None
     try:
         decoded_token = auth.verify_id_token(cred.credentials)
-        uid = decoded_token.get("uid")
-        print(f"DEBUG: get_current_user -> Successfully verified user: {uid}")
-        return uid
+        return decoded_token.get("uid")
     except Exception as e:
-        print(f"DEBUG Auth error: {e}")
+        logger.warning("Token verification failed: %s", type(e).__name__)
         return None
 
 
@@ -119,7 +123,7 @@ async def get_analyses(uid: str = Depends(get_current_user)):
             results.append(data)
         return results
     except Exception as e:
-        print(f"Error fetching analyses: {e}")
+        logger.error("Error fetching analyses for uid=%s: %s", uid, e)
         raise HTTPException(status_code=500, detail="Failed to fetch analyses")
 
 
@@ -245,10 +249,39 @@ async def analyze_contract(
                     "report": report.dict() if hasattr(report, "dict") else report
                 })
             except Exception as e:
-                import sys
-                print(f"Warning: Failed to save analysis for user {uid}: {e}", file=sys.stderr)
+                logger.warning("Failed to save analysis for uid=%s: %s", uid, e)
 
         return report
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+@app.get("/api/playbook")
+async def get_playbook(uid: str = Depends(get_current_user)):
+    """Return all playbook entries (without embeddings) for auditability."""
+    if not uid:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    entries = []
+    async for doc in _db.collection("playbook").stream():
+        d = doc.to_dict()
+        d.pop("embedding", None)
+        d["id"] = doc.id
+        entries.append(d)
+    entries.sort(key=lambda x: x.get("id", ""))
+    return {"count": len(entries), "entries": entries}
+
+
+@app.post("/api/export/pdf")
+async def export_pdf(request: Request, uid: str = Depends(get_current_user)):
+    """Generate a server-side PDF from an AnalysisReport JSON body."""
+    if not uid:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    report = await request.json()
+    from app.services.pdf_export import build_pdf
+    pdf_bytes = build_pdf(report)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=veritas-analysis.pdf"},
+    )

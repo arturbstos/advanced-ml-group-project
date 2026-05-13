@@ -9,6 +9,7 @@ pdfplumber
 python-dotenv
 pydantic
 tenacity
+reportlab
 
 # On-device PII redaction (GDPR — runs before any OpenAI call)
 presidio-analyzer

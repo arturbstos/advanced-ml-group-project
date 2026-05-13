@@ -1,8 +1,8 @@
 """Assemble the final analysis report for the UI.
 
 Takes a list of Findings plus the ContractExtraction and returns the
-structured JSON that the Streamlit UI expects: summary counts, the
-findings themselves, and a negotiation brief.
+structured AnalysisReport: summary counts, the findings themselves,
+and a negotiation brief.
 """
 from datetime import date
 from typing import Dict, List, Optional

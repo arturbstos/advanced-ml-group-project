@@ -1,6 +1,6 @@
 {
-  "version": "1.0",
-  "description": "Gold annotation set for Veritas clause analyzer. 10 clauses across 6 risk categories. Each entry specifies the expected risk tier, at least one statute that must appear in the citation, and keywords that should appear in the finding title or body.",
+  "version": "1.1",
+  "description": "Gold annotation set for Veritas clause analyzer. 25 clauses across 13 risk categories. Each entry specifies the expected risk tier, at least one statute that must appear in the citation, and keywords that should appear in the finding title or body.",
   "clauses": [
     {
       "id": "GS-001",
@@ -91,6 +91,141 @@
       "expected_statute_contains": ["SGB IV", "§ 7"],
       "expected_keywords_any": ["scheinselbst", "false self", "40 stunden", "stunden", "exklusivität", "exclusivity", "nebentätigkeit"],
       "rationale": "Mandatory 40h/week exclusivity + pre-approval for other clients = Scheinselbstständigkeit risk and restricts the freelancer's economic independence."
+    },
+    {
+      "id": "GS-011",
+      "category": "exclusivity",
+      "clause": "Der Auftragnehmer verpflichtet sich, während der Vertragslaufzeit ausschließlich für den Auftraggeber tätig zu sein und keine weiteren Aufträge anzunehmen.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["SGB IV", "§ 7"],
+      "expected_keywords_any": ["scheinselbst", "exklusiv", "exclusivity", "wirtschaftliche abhängigkeit", "nebentätigkeit"],
+      "rationale": "Full exclusivity without compensation creates economic dependence and is a strong Scheinselbstständigkeit indicator under § 7 SGB IV."
+    },
+    {
+      "id": "GS-012",
+      "category": "termination",
+      "clause": "Der Vertrag verlängert sich automatisch um jeweils 12 Monate, sofern er nicht mit einer Frist von 6 Monaten vor Ablauf schriftlich gekündigt wird.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["verlänger", "renewal", "kündigung", "termination", "frist", "6 monate"],
+      "rationale": "Auto-renewal with a 6-month opt-out window significantly restricts the freelancer's flexibility and departs from market norms."
+    },
+    {
+      "id": "GS-013",
+      "category": "penalty",
+      "clause": "Bei Verletzung der Vertraulichkeitsvereinbarung verpflichtet sich der Auftragnehmer zur Zahlung einer Vertragsstrafe in Höhe von EUR 50.000 je Verstoß, unabhängig von einem tatsächlich eingetretenen Schaden.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 343"],
+      "expected_keywords_any": ["vertragsstrafe", "penalty", "strafe", "50.000", "unverhältnis"],
+      "rationale": "A €50k flat penalty per breach regardless of actual harm is disproportionate and challengeable under § 343 BGB (Herabsetzung der Vertragsstrafe)."
+    },
+    {
+      "id": "GS-014",
+      "category": "governing_law",
+      "clause": "Dieser Vertrag unterliegt dem Recht der Bundesrepublik Deutschland. Gerichtsstand ist München.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["deutsches recht", "german law", "gerichtsstand", "jurisdiction", "recht"],
+      "rationale": "Standard German governing law and Munich jurisdiction clause — no meaningful negotiation upside for a German-based contract."
+    },
+    {
+      "id": "GS-015",
+      "category": "non_solicitation",
+      "clause": "Der Auftragnehmer verpflichtet sich, während der Vertragslaufzeit und für einen Zeitraum von 12 Monaten nach Vertragsende keine Mitarbeiter des Auftraggebers abzuwerben oder für sich oder Dritte zu gewinnen.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["abwerbung", "non-solicitation", "mitarbeiter", "employee", "12 monate"],
+      "rationale": "12-month post-contract non-solicitation of staff is above market norm (6 months is standard) and restricts the freelancer's future business development."
+    },
+    {
+      "id": "GS-016",
+      "category": "force_majeure",
+      "clause": "Keine der Vertragsparteien haftet für die Nichterfüllung ihrer Verpflichtungen, sofern und solange dies auf Ereignisse höherer Gewalt zurückzuführen ist, die außerhalb ihrer Kontrolle liegen.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["höhere gewalt", "force majeure", "kontrolle", "standard"],
+      "rationale": "Symmetric force majeure clause releasing both parties equally — standard boilerplate with no meaningful negotiation upside."
+    },
+    {
+      "id": "GS-017",
+      "category": "payment_terms",
+      "clause": "Der Auftraggeber ist berechtigt, das vereinbarte Stundenhonorar bei einer Veränderung der wirtschaftlichen Verhältnisse oder der Marktlage einseitig um bis zu 20% zu reduzieren.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 315"],
+      "expected_keywords_any": ["honorar", "rate", "einseitig", "unilateral", "reduzier", "reduce"],
+      "rationale": "Unilateral right to reduce fees by up to 20% based on vague 'market conditions' is an impermissible unilateral determination of performance under § 315 BGB."
+    },
+    {
+      "id": "GS-018",
+      "category": "subcontracting",
+      "clause": "Der Auftragnehmer ist nicht berechtigt, die übertragenen Leistungen ganz oder teilweise an Unterauftragnehmer zu vergeben, ohne die vorherige schriftliche Zustimmung des Auftraggebers. Diese Zustimmung kann ohne Angabe von Gründen verweigert werden.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["unterauftragnehmer", "subcontract", "zustimmung", "consent", "delegation"],
+      "rationale": "Absolute prohibition on subcontracting with consent refusable without cause limits the freelancer's operational flexibility beyond BGB defaults."
+    },
+    {
+      "id": "GS-019",
+      "category": "insurance",
+      "clause": "Der Auftragnehmer hat auf eigene Kosten eine Berufshaftpflichtversicherung mit einer Mindestdeckungssumme von EUR 5.000.000 je Schadensfall abzuschließen und für die Dauer des Vertrages aufrechtzuerhalten.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["versicherung", "insurance", "haftpflicht", "deckung", "5.000.000"],
+      "rationale": "A €5M per-incident professional indemnity requirement far exceeds market norms for freelancers (€1–2M is standard) and imposes a disproportionate cost."
+    },
+    {
+      "id": "GS-020",
+      "category": "entire_agreement",
+      "clause": "Dieser Vertrag stellt die vollständige Vereinbarung zwischen den Parteien dar und ersetzt alle früheren schriftlichen oder mündlichen Vereinbarungen. Änderungen bedürfen der Schriftform.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["vollständige vereinbarung", "gesamte vereinbarung", "schriftform", "entire agreement"],
+      "rationale": "Standard entire-agreement and written amendment clause — symmetric, standard boilerplate with no negotiation upside."
+    },
+    {
+      "id": "GS-021",
+      "category": "assignment",
+      "clause": "Der Auftraggeber ist berechtigt, seine Rechte und Pflichten aus diesem Vertrag ohne Zustimmung des Auftragnehmers auf verbundene Unternehmen oder im Rahmen einer Unternehmensübernahme auf Dritte zu übertragen.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB", "§ 613"],
+      "expected_keywords_any": ["abtret", "assignment", "übertrag", "transfer", "dritte", "zustimmung"],
+      "rationale": "Unilateral right to assign the contract without consent could force the freelancer to work for an unknown party — contrary to the personal nature of service contracts under § 613 BGB."
+    },
+    {
+      "id": "GS-022",
+      "category": "audit_rights",
+      "clause": "Der Auftraggeber ist berechtigt, jederzeit und ohne vorherige Ankündigung die Geschäftsräume, Bücher, Aufzeichnungen und IT-Systeme des Auftragnehmers zu prüfen, soweit diese mit der Durchführung dieses Vertrages zusammenhängen.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["prüf", "audit", "einsicht", "inspection", "unangekündigt", "unannounced"],
+      "rationale": "Unannounced audit rights over the freelancer's premises and IT systems go beyond standard contract oversight and are a Scheinselbstständigkeit risk indicator."
+    },
+    {
+      "id": "GS-023",
+      "category": "payment_terms",
+      "clause": "Die Vergütung des Auftragnehmers ist nur fällig, sofern und soweit der Auftraggeber seinerseits von seinem Endkunden für die entsprechenden Leistungen bezahlt worden ist (Pay-when-paid).",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 641"],
+      "expected_keywords_any": ["pay-when-paid", "endkunde", "fälligkeit", "zahlungsbedingung", "bezahlt"],
+      "rationale": "Pay-when-paid clauses shift the client's credit risk entirely to the freelancer and are legally controversial; they are unenforceable as payment deferral under § 641 BGB if the client's customer never pays."
+    },
+    {
+      "id": "GS-024",
+      "category": "work_product",
+      "clause": "Der Auftragnehmer schuldet die Lieferung der vereinbarten Arbeitsergebnisse in der vereinbarten Qualität und zum vereinbarten Zeitpunkt. Details sind der Leistungsbeschreibung in Anlage 1 zu entnehmen.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["leistung", "deliverable", "qualität", "zeitpunkt", "anlage"],
+      "rationale": "Standard work product delivery obligation referencing a specification annex — balanced, no meaningful negotiation upside."
+    },
+    {
+      "id": "GS-025",
+      "category": "termination",
+      "clause": "Jede Vertragspartei kann diesen Vertrag mit einer Frist von 30 Tagen zum Monatsende schriftlich ordentlich kündigen. Im Falle einer Kündigung durch den Auftraggeber werden alle bis zum Kündigungszeitpunkt erbrachten und nachgewiesenen Leistungen vergütet.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["kündigung", "termination", "30 tage", "vergütung", "symmetric"],
+      "rationale": "Symmetric 30-day termination with payment for completed work is balanced and favorable to the freelancer — standard scope."
     }
   ]
 }

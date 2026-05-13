@@ -24,7 +24,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.services.ingestion import ContractExtraction
 from db import playbook_lookup, rate_lookup, statute_lookup
 
-_LLM_MODEL = "gpt-4o-mini"
+_LLM_MODEL = "gpt-4o"
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
