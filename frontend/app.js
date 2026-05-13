@@ -279,8 +279,8 @@ async function handleFile(file) {
         window.dispatchEvent(new CustomEvent('analysis-complete'));
     } catch (error) {
         if (error.status === 429) {
-            const go = confirm(`${error.message}\n\nView pricing plans?`);
-            if (go) document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+            const go = confirm(`${error.message}\n\nUpgrade to Pro for 10 analyses/month?`);
+            if (go) window.location.href = 'mailto:arturdbastos@gmail.com?subject=Veritas%20Plan%20Upgrade&body=Hi%2C%20I%27d%20like%20to%20upgrade%20my%20Veritas%20plan.';
         } else if (error.message.toLowerCase().includes('scanned')) {
             alert('Scanned PDFs are not supported. Please upload a text-based PDF (not a scan or image).');
         } else {

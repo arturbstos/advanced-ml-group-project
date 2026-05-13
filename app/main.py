@@ -272,6 +272,24 @@ async def get_playbook(uid: str = Depends(get_current_user)):
     return {"count": len(entries), "entries": entries}
 
 
+@app.post("/api/admin/set-tier")
+async def admin_set_tier(request: Request, uid: str = Depends(get_current_user)):
+    """Set a user's tier. Restricted to the admin UID configured in ADMIN_UID env var."""
+    admin_uid = os.getenv("ADMIN_UID")
+    if not uid or not admin_uid or uid != admin_uid:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    body = await request.json()
+    target_uid = body.get("uid", "").strip()
+    tier        = body.get("tier", "").strip().lower()
+    if not target_uid:
+        raise HTTPException(status_code=400, detail="uid is required")
+    if tier not in ("free", "pro", "team"):
+        raise HTTPException(status_code=400, detail="tier must be free, pro, or team")
+    await _db.collection("users").document(target_uid).set({"tier": tier}, merge=True)
+    logger.info("Admin %s set tier=%s for uid=%s", uid, tier, target_uid)
+    return {"uid": target_uid, "tier": tier, "status": "updated"}
+
+
 @app.post("/api/export/pdf")
 async def export_pdf(request: Request, uid: str = Depends(get_current_user)):
     """Generate a server-side PDF from an AnalysisReport JSON body."""
