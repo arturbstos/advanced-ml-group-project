@@ -26,6 +26,7 @@ import json
 import os
 import sys
 import asyncio
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -198,10 +199,15 @@ async def main_direct(gold_clauses):
     return results
 
 
+_HTTP_RATE_DELAY = 7  # seconds between requests — stays under the 10/min server limit
+
 def main_http(gold_clauses, url: str, token: str):
     print(f"\nRunning {len(gold_clauses)} clauses against {url} …")
+    print(f"(pacing at 1 request every {_HTTP_RATE_DELAY}s to respect the rate limit)\n")
     results = []
-    for item in gold_clauses:
+    for i, item in enumerate(gold_clauses):
+        if i > 0:
+            time.sleep(_HTTP_RATE_DELAY)
         print(f"  {item['id']} {item['category']} …", end=" ", flush=True)
         try:
             r = _analyze_clause_http(item["clause"], url, token)
