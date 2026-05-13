@@ -1,0 +1,42 @@
+[
+  {
+    "timestamp": "2026-05-13T15:36:06.006428Z",
+    "mode": "direct",
+    "n": 25,
+    "risk_acc": 0.8,
+    "statute_hit": 0.8,
+    "keyword_hit": 1.0,
+    "precision": 0.8667,
+    "pass": true
+  },
+  {
+    "timestamp": "2026-05-13T15:59:48.110023Z",
+    "mode": "http",
+    "n": 25,
+    "risk_acc": 0.84,
+    "statute_hit": 0.8,
+    "keyword_hit": 0.92,
+    "precision": 0.8533,
+    "pass": true
+  },
+  {
+    "timestamp": "2026-05-13T16:06:26.667511Z",
+    "mode": "direct",
+    "n": 25,
+    "risk_acc": 0.8,
+    "statute_hit": 0.8,
+    "keyword_hit": 0.92,
+    "precision": 0.84,
+    "pass": true
+  },
+  {
+    "timestamp": "2026-05-13T16:17:13.495951Z",
+    "mode": "direct",
+    "n": 25,
+    "risk_acc": 0.8,
+    "statute_hit": 0.8,
+    "keyword_hit": 0.88,
+    "precision": 0.8267,
+    "pass": true
+  }
+]

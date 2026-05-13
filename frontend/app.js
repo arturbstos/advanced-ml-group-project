@@ -769,64 +769,40 @@ btnDownload.addEventListener('click', () => {
     URL.revokeObjectURL(url);
 });
 
-/* ─ PDF export ─ */
+/* ─ PDF export (server-side via /api/export/pdf) ─ */
 let currentReport = null;
 
-btnDownloadPdf.addEventListener('click', () => {
+btnDownloadPdf.addEventListener('click', async () => {
     if (!currentReport) return;
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const marginL = 15, marginR = 15, pageW = 210;
-    const usableW = pageW - marginL - marginR;
-    let y = 20;
 
-    const addLine = (text, opts = {}) => {
-        const { size = 10, bold = false, color = [200, 200, 200], indent = 0 } = opts;
-        doc.setFontSize(size);
-        doc.setFont('helvetica', bold ? 'bold' : 'normal');
-        doc.setTextColor(...color);
-        const lines = doc.splitTextToSize(text, usableW - indent);
-        lines.forEach(line => {
-            if (y > 275) { doc.addPage(); y = 20; }
-            doc.text(line, marginL + indent, y);
-            y += size * 0.45;
+    const user = window.firebaseAuth?.currentUser;
+    if (!user) { alert('Please log in to export PDF.'); return; }
+
+    btnDownloadPdf.disabled = true;
+    btnDownloadPdf.textContent = '⏳ Generating…';
+
+    try {
+        const token = await user.getIdToken();
+        const resp  = await fetch(`${API_URL}/api/export/pdf`, {
+            method:  'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body:    JSON.stringify(currentReport),
         });
-        y += 2;
-    };
-
-    // Header
-    doc.setFillColor(15, 15, 15);
-    doc.rect(0, 0, 210, 297, 'F');
-    addLine('veritas', { size: 18, bold: true, color: [245, 245, 245] });
-    addLine(`German Freelance Contract Analysis  ·  ${currentReport.date}`, { size: 9, color: [100, 100, 100] });
-    addLine(currentReport.profile, { size: 9, color: [120, 120, 120] });
-    y += 4;
-
-    // Summary
-    const s = currentReport.summary || {};
-    addLine(`Findings: ${s.total || 0} total  ·  ${s.high || 0} HIGH  ·  ${s.medium || 0} MED  ·  ${s.low || 0} LOW`, { size: 10, bold: true, color: [245, 245, 245] });
-    y += 4;
-
-    // Rate benchmark
-    if (currentReport.rate_benchmark && currentReport.rate_benchmark.offered > 0) {
-        const b = currentReport.rate_benchmark;
-        addLine(`Rate: €${b.offered}/h  ·  p25 €${b.p25}  ·  median €${b.median}  ·  p75 €${b.p75}  (${b.source})`, { size: 9, color: [160, 160, 160] });
-        y += 2;
+        if (!resp.ok) throw new Error(`Server error ${resp.status}`);
+        const blob = await resp.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `veritas-analysis-${currentReport.date}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('PDF export failed:', err);
+        alert('PDF export failed. Please try again.');
+    } finally {
+        btnDownloadPdf.disabled = false;
+        btnDownloadPdf.textContent = '↓ PDF';
     }
-
-    // Findings
-    addLine('FINDINGS', { size: 11, bold: true, color: [180, 180, 180] });
-    y += 2;
-    (currentReport.findings || []).forEach((f, i) => {
-        const riskColor = f.risk === 'high' ? [239, 68, 68] : f.risk === 'medium' ? [234, 179, 8] : [34, 197, 94];
-        addLine(`${i + 1}. [${f.risk.toUpperCase()}] ${f.title}`, { size: 10, bold: true, color: riskColor });
-        if (f.body) addLine(f.body, { size: 9, color: [180, 180, 180], indent: 4 });
-        if (f.redline) addLine(`→ ${f.redline}`, { size: 9, color: [100, 180, 100], indent: 4 });
-        if (f.statute) addLine(`⚖ ${f.statute}`, { size: 8, color: [120, 120, 120], indent: 4 });
-        y += 2;
-    });
-
-    doc.save(`contract_analysis_${currentReport.date}.pdf`);
 });
 
 /* Expose a stable entry point so dashboard.js can render a stored
