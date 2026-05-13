@@ -981,3 +981,38 @@ const _HERO_REELS = [
     updateTabs();
     setTimeout(tick, 480);
 })();
+
+/* ─ Mobile nav hamburger ─ */
+(function initMobileNav() {
+    const btn  = document.getElementById('nav-hamburger');
+    const menu = document.getElementById('nav-mobile-menu');
+    if (!btn || !menu) return;
+
+    function close() {
+        btn.classList.remove('open');
+        menu.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        menu.setAttribute('aria-hidden', 'true');
+    }
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = menu.classList.contains('open');
+        if (isOpen) { close(); } else {
+            btn.classList.add('open');
+            menu.classList.add('open');
+            btn.setAttribute('aria-expanded', 'true');
+            menu.setAttribute('aria-hidden', 'false');
+        }
+    });
+
+    // Close when a menu link is clicked
+    menu.querySelectorAll('.nav-mobile-link').forEach(link => {
+        link.addEventListener('click', close);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target) && e.target !== btn) close();
+    });
+})();

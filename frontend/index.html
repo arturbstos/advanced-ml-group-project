@@ -9,7 +9,7 @@
     <title>veritas — Intelligent Freelance Contract Analyzer</title>
     <meta name="description" content="Upload your German freelance contract for structured AI-powered risk analysis against statutory law. Powered by GPT-4o and Firestore Vector Search.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
     <!-- Floating Pill Nav -->
@@ -27,8 +27,16 @@
         <div class="nav-right">
             <button class="nav-btn btn-ghost-pill btn-lang mono" id="lang-toggle" aria-label="Switch language">DE</button>
             <button class="nav-btn btn-primary-pill btn-login" data-i18n="nav.login">Log In</button>
+            <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
         </div>
     </nav>
+    <div class="nav-mobile-menu" id="nav-mobile-menu" aria-hidden="true">
+        <a href="#how"     class="nav-mobile-link mono" data-i18n="nav.how">How</a>
+        <a href="#pricing" class="nav-mobile-link mono" data-i18n="nav.pricing">Pricing</a>
+        <a href="#upload"  class="nav-mobile-link mono" data-i18n="nav.upload">Analyzer</a>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero hero-section" id="hero">
@@ -451,7 +459,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module" src="auth.js?v=4"></script>
-    <script type="module" src="app.js?v=10"></script>
+    <script type="module" src="app.js?v=11"></script>
     <script type="module" src="policies.js?v=1"></script>
 </body>
 </html>
