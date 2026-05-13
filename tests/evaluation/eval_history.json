@@ -38,5 +38,25 @@
     "keyword_hit": 0.88,
     "precision": 0.8267,
     "pass": true
+  },
+  {
+    "timestamp": "2026-05-13T20:32:58.928089Z",
+    "mode": "direct",
+    "n": 50,
+    "risk_acc": 0.0,
+    "statute_hit": 0.24,
+    "keyword_hit": 0.0,
+    "precision": 0.08,
+    "pass": false
+  },
+  {
+    "timestamp": "2026-05-13T20:42:24.429945Z",
+    "mode": "direct",
+    "n": 50,
+    "risk_acc": 0.76,
+    "statute_hit": 0.82,
+    "keyword_hit": 0.84,
+    "precision": 0.8067,
+    "pass": true
   }
 ]
