@@ -2,6 +2,7 @@
 fastapi
 uvicorn[standard]
 python-multipart  # required by FastAPI for UploadFile / File(...)
+stripe
 
 # AI & Processing
 openai

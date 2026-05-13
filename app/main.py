@@ -272,6 +272,63 @@ async def get_playbook(uid: str = Depends(get_current_user)):
     return {"count": len(entries), "entries": entries}
 
 
+@app.post("/api/billing/create-checkout-session")
+async def create_checkout_session(request: Request, uid: str = Depends(get_current_user)):
+    """Create a Stripe Checkout session for a plan upgrade. Returns {url}."""
+    if not uid:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    body = await request.json()
+    tier = body.get("tier", "").strip().lower()
+    if tier not in ("pro", "team"):
+        raise HTTPException(status_code=400, detail="tier must be pro or team")
+
+    user_record = auth.get_user(uid)
+    from app.services.billing import create_checkout_url
+    try:
+        url = create_checkout_url(uid, user_record.email, tier)
+    except (ValueError, RuntimeError) as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    return {"url": url}
+
+
+@app.post("/api/billing/webhook")
+async def stripe_webhook(request: Request):
+    """Stripe webhook — upgrades or downgrades the user tier in Firestore."""
+    payload    = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    from app.services.billing import parse_webhook_event
+    try:
+        event = parse_webhook_event(payload, sig_header)
+    except Exception as e:
+        logger.warning("Stripe webhook rejected: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid webhook")
+
+    etype = event["type"]
+    if etype == "checkout.session.completed":
+        session     = event["data"]["object"]
+        firebase_uid = session.get("metadata", {}).get("firebase_uid")
+        tier         = session.get("metadata", {}).get("tier")
+        if firebase_uid and tier:
+            await _db.collection("users").document(firebase_uid).set(
+                {"tier": tier, "stripe_customer_id": session.get("customer")},
+                merge=True,
+            )
+            logger.info("Stripe: upgraded uid=%s to tier=%s", firebase_uid, tier)
+
+    elif etype == "customer.subscription.deleted":
+        sub          = event["data"]["object"]
+        firebase_uid = sub.get("metadata", {}).get("firebase_uid")
+        if firebase_uid:
+            await _db.collection("users").document(firebase_uid).set(
+                {"tier": "free"}, merge=True
+            )
+            logger.info("Stripe: subscription cancelled, downgraded uid=%s to free", firebase_uid)
+
+    return {"status": "ok"}
+
+
 @app.post("/api/admin/set-tier")
 async def admin_set_tier(request: Request, uid: str = Depends(get_current_user)):
     """Set a user's tier. Restricted to the admin UID configured in ADMIN_UID env var."""

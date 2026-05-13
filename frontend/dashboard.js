@@ -12,6 +12,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Create modal
     createReportModal();
 
+    // Show upgrade outcome banner and clean URL
+    const _params = new URLSearchParams(window.location.search);
+    if (_params.get('upgrade') === 'success') {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:12px 24px;border-radius:6px;font-family:JetBrains Mono,monospace;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.4)';
+        banner.textContent = '✓ Plan upgraded — your new limits are active.';
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 6000);
+        history.replaceState(null, '', window.location.pathname);
+    } else if (_params.get('upgrade') === 'cancelled') {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:72px;left:50%;transform:translateX(-50%);background:#374151;color:#d1d5db;padding:12px 24px;border-radius:6px;font-family:JetBrains Mono,monospace;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.4)';
+        banner.textContent = 'Checkout cancelled — your plan was not changed.';
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 4000);
+        history.replaceState(null, '', window.location.pathname);
+    }
+
     let authChecked = false;
 
     // Wait for auth to initialize

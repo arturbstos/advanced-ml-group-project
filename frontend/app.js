@@ -280,7 +280,7 @@ async function handleFile(file) {
     } catch (error) {
         if (error.status === 429) {
             const go = confirm(`${error.message}\n\nUpgrade to Pro for 10 analyses/month?`);
-            if (go) window.location.href = 'mailto:arturdbastos@gmail.com?subject=Veritas%20Plan%20Upgrade&body=Hi%2C%20I%27d%20like%20to%20upgrade%20my%20Veritas%20plan.';
+            if (go) window.handleUpgrade('pro');
         } else if (error.message.toLowerCase().includes('scanned')) {
             alert('Scanned PDFs are not supported. Please upload a text-based PDF (not a scan or image).');
         } else {
@@ -804,6 +804,32 @@ btnDownloadPdf.addEventListener('click', async () => {
         btnDownloadPdf.textContent = '↓ PDF';
     }
 });
+
+/* ─ Stripe upgrade ─ */
+window.handleUpgrade = async function (tier) {
+    const user = window.firebaseAuth?.currentUser;
+    if (!user) {
+        alert('Please log in to upgrade your plan.');
+        return;
+    }
+    try {
+        const token = await user.getIdToken();
+        const resp = await fetch(`${API_URL}/api/billing/create-checkout-session`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tier }),
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
+            alert(`Could not start checkout: ${err.detail}`);
+            return;
+        }
+        const { url } = await resp.json();
+        window.location.href = url;
+    } catch (e) {
+        alert('Checkout failed. Please try again.');
+    }
+};
 
 /* Expose a stable entry point so dashboard.js can render a stored
  * analysis through the same refined ResultsView used after live uploads. */
