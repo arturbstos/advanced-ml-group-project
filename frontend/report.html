@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="refined">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Analysis — veritas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#09090b">
+    <style>
+        .report-wrap { max-width: 860px; margin: 100px auto 60px; padding: 0 24px; }
+        .report-header { margin-bottom: 32px; }
+        .report-badge { display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--muted);padding:6px 12px;border:1px solid var(--border-mid);border-radius:9999px;background:rgba(255,255,255,0.02);margin-bottom:16px; }
+        .report-filename { font-family:var(--font-mono);font-size:13px;color:var(--muted);margin-bottom:8px; }
+        .report-loading { font-family:var(--font-mono);font-size:13px;color:var(--muted);text-align:center;padding:80px 0; }
+        .report-error { font-family:var(--font-mono);font-size:13px;color:var(--red);text-align:center;padding:80px 0; }
+        .report-cta { margin-top:40px;padding:24px;background:var(--bg-elev);border:1px solid var(--border-mid);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap; }
+        .report-cta-text { font-family:var(--font-mono);font-size:12px;color:var(--muted); }
+        .report-cta-text strong { color:var(--text);display:block;margin-bottom:4px;font-size:14px; }
+    </style>
+</head>
+<body>
+    <nav class="pill-nav nav" id="pill-nav">
+        <div class="nav-left">
+            <a href="index.html" class="brand nav-logo">
+                <span class="brand-mark">V</span>
+                <span>veritas</span>
+                <span class="brand-tag beta-tag">Beta</span>
+            </a>
+        </div>
+        <div class="nav-right">
+            <a href="index.html" class="nav-btn btn-primary-pill mono" style="text-decoration:none;">Analyze your contract →</a>
+        </div>
+    </nav>
+
+    <div class="report-wrap">
+        <div class="report-header">
+            <div class="report-badge"><span class="pulse"></span> Shared analysis</div>
+            <div id="report-filename" class="report-filename"></div>
+        </div>
+
+        <div id="report-loading" class="report-loading">$ Fetching shared report...</div>
+        <div id="report-error"   class="report-error"   style="display:none;"></div>
+
+        <!-- Reuse the same result components from app.js -->
+        <div id="results-section" class="results hidden">
+            <div id="summary-pills" class="summary-pills"></div>
+            <div id="clauses-flagged" class="mono dim" style="font-size:12px;margin-top:4px;margin-bottom:24px;"></div>
+            <div id="score-grid" class="score-grid hidden"></div>
+            <div id="rate-benchmark-section" class="rate-section hidden"></div>
+            <div class="section-label mono" style="margin-bottom:12px;">// findings · click to expand</div>
+            <div id="findings-container"></div>
+            <div class="brief-section" style="margin-top:32px;" id="brief-section">
+                <div class="section-label mono" style="margin-bottom:12px;">// negotiation brief</div>
+                <pre id="brief-text" class="brief-text"></pre>
+            </div>
+        </div>
+
+        <div class="report-cta">
+            <div class="report-cta-text">
+                <strong>Analyze your own contract.</strong>
+                German law · GPT-4o · Statute citations · Negotiation brief
+            </div>
+            <a href="index.html#upload" class="btn btn-primary mono">Try Veritas free →</a>
+        </div>
+    </div>
+
+    <script type="module" src="auth.js?v=4"></script>
+    <script type="module" src="app.js?v=11"></script>
+    <script type="module">
+        import { API_URL } from './config.js?v=4';
+
+        const params   = new URLSearchParams(window.location.search);
+        const token    = params.get('t');
+        const loading  = document.getElementById('report-loading');
+        const errorEl  = document.getElementById('report-error');
+        const filename = document.getElementById('report-filename');
+
+        if (!token) {
+            loading.style.display = 'none';
+            errorEl.style.display = 'block';
+            errorEl.textContent = 'Invalid share link.';
+        } else {
+            fetch(`${API_URL}/api/shared/${token}`)
+                .then(r => {
+                    if (!r.ok) throw new Error(r.status === 404 ? 'This link has expired or does not exist.' : `Error ${r.status}`);
+                    return r.json();
+                })
+                .then(data => {
+                    loading.style.display = 'none';
+                    filename.textContent = data.filename || '';
+                    if (data.report && window.veritasShowAnalysis) {
+                        window.veritasShowAnalysis(data.filename, data.report);
+                    }
+                })
+                .catch(err => {
+                    loading.style.display = 'none';
+                    errorEl.style.display = 'block';
+                    errorEl.textContent = err.message || 'Failed to load shared report.';
+                });
+        }
+    </script>
+</body>
+</html>

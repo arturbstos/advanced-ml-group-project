@@ -27,3 +27,9 @@ slowapi
 
 # Cloud OCR fallback for scanned PDFs
 google-cloud-documentai
+
+# Transactional email
+resend
+
+# Error monitoring
+sentry-sdk[fastapi]

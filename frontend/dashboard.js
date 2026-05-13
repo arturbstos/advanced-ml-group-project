@@ -250,13 +250,37 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="file-row">
                     <span class="file-icon mono">PDF</span>
                     <span class="filename analysis-title">${safeName}</span>
-                    <button class="btn-delete-analysis mono" title="Delete analysis" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 4px;line-height:1;align-self:flex-start;" data-id="${analysis.id}">✕</button>
+                    <div style="display:flex;gap:6px;align-self:flex-start;margin-left:auto;">
+                        <button class="btn-share-analysis mono" title="Copy share link" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;padding:0 4px;line-height:1;font-family:var(--font-mono);" data-id="${analysis.id}">Share</button>
+                        <button class="btn-delete-analysis mono" title="Delete analysis" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 4px;line-height:1;" data-id="${analysis.id}">✕</button>
+                    </div>
                 </div>
                 <div class="meta analysis-meta mono">
                     <span>${date}</span>
                 </div>
                 <div class="stats analysis-stats">${statsHtml}</div>
             `;
+
+            card.querySelector('.btn-share-analysis').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const btn = e.currentTarget;
+                btn.textContent = '...';
+                try {
+                    const token = await window.firebaseAuth.currentUser.getIdToken();
+                    const res = await fetch(`${API_URL}/api/analyses/${analysis.id}/share`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!res.ok) throw new Error();
+                    const { url } = await res.json();
+                    await navigator.clipboard.writeText(url);
+                    btn.textContent = '✓ Copied';
+                    setTimeout(() => { btn.textContent = 'Share'; }, 2000);
+                } catch {
+                    btn.textContent = 'Share';
+                    alert('Failed to generate share link.');
+                }
+            });
 
             card.querySelector('.btn-delete-analysis').addEventListener('click', async (e) => {
                 e.stopPropagation();

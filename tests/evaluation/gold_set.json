@@ -1,6 +1,6 @@
 {
-  "version": "1.1",
-  "description": "Gold annotation set for Veritas clause analyzer. 25 clauses across 13 risk categories. Each entry specifies the expected risk tier, at least one statute that must appear in the citation, and keywords that should appear in the finding title or body.",
+  "version": "1.2",
+  "description": "Gold annotation set for Veritas clause analyzer. 50 clauses across 21 risk categories. Each entry specifies the expected risk tier, at least one statute that must appear in the citation, and keywords that should appear in the finding title or body.",
   "clauses": [
     {
       "id": "GS-001",
@@ -226,6 +226,231 @@
       "expected_statute_contains": [],
       "expected_keywords_any": ["kündigung", "termination", "30 tage", "vergütung", "symmetric"],
       "rationale": "Symmetric 30-day termination with payment for completed work is balanced and favorable to the freelancer — standard scope."
+    },
+    {
+      "id": "GS-026",
+      "category": "scheinselbststaendigkeit",
+      "clause": "Der Auftragnehmer ist ausschließlich für den Auftraggeber tätig und darf während der Vertragslaufzeit keine anderen Aufträge annehmen oder eigene Kunden akquirieren.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["§ 7", "SGB IV"],
+      "expected_keywords_any": ["scheinselbst", "false self", "exklusivität", "exclusivity", "ausschließlich"],
+      "rationale": "Exclusive work obligation for a single client is a strong Scheinselbstständigkeit indicator — freelancers must be free to work for multiple clients."
+    },
+    {
+      "id": "GS-027",
+      "category": "scheinselbststaendigkeit",
+      "clause": "Der Auftragnehmer hat an allen Teambesprechungen des Auftraggebers teilzunehmen, ist in die Projektplanung einzubeziehen und erhält eine betriebliche E-Mail-Adresse sowie Zugang zu internen Systemen des Auftraggebers.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["§ 7", "SGB IV"],
+      "expected_keywords_any": ["eingliederung", "integration", "scheinselbst", "betrieblich", "internal"],
+      "rationale": "Mandatory team participation, company email, and access to internal systems are strong indicators of organisational integration under § 7 SGB IV."
+    },
+    {
+      "id": "GS-028",
+      "category": "liability",
+      "clause": "Die Haftung des Auftragnehmers ist auf Vorsatz und grobe Fahrlässigkeit beschränkt. Bei einfacher Fahrlässigkeit haftet der Auftragnehmer nicht. Die Haftung ist auf das zweifache der vertraglich vereinbarten Vergütung begrenzt.",
+      "expected_risk": "low",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["haftung", "liability", "grobe fahrlässigkeit", "gross negligence", "beschränkt"],
+      "rationale": "Liability cap at 2× fee for gross negligence only is a balanced and market-standard clause that protects the freelancer."
+    },
+    {
+      "id": "GS-029",
+      "category": "liability",
+      "clause": "Der Auftragnehmer ist verpflichtet, den Auftraggeber von allen Ansprüchen Dritter freizustellen, die aus der Verletzung von Rechten Dritter durch den Auftragnehmer entstehen, einschließlich aller Kosten der Rechtsverteidigung.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 276"],
+      "expected_keywords_any": ["freistellung", "indemnif", "haftung", "ansprüche dritter", "rechtsverteidigung"],
+      "rationale": "Broad third-party indemnification including legal defence costs is a significant risk — it extends liability beyond what the freelancer can reasonably control."
+    },
+    {
+      "id": "GS-030",
+      "category": "non_compete",
+      "clause": "Der Auftragnehmer verpflichtet sich, für die Dauer von 24 Monaten nach Vertragsende keine Tätigkeit für Unternehmen auszuüben, die in direktem oder indirektem Wettbewerb mit dem Auftraggeber stehen. Für dieses Wettbewerbsverbot wird keine gesonderte Vergütung gezahlt.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["§ 74", "HGB"],
+      "expected_keywords_any": ["wettbewerb", "non-compete", "karenz", "vergütung", "24 monate"],
+      "rationale": "24-month post-contractual non-compete without Karenzentschädigung is void under § 74 HGB — compensation is mandatory for enforceable non-competes."
+    },
+    {
+      "id": "GS-031",
+      "category": "payment_terms",
+      "clause": "Der Auftragnehmer erhält eine monatliche Pauschalvergütung von €8.000 netto, die jeweils am 15. des Folgemonats nach Rechnungsstellung und Abnahme der Leistungen fällig wird.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["vergütung", "payment", "fälligkeit", "pauschal", "monatlich"],
+      "rationale": "Fixed monthly fee payable on the 15th of the following month after invoice and acceptance — clear, standard terms with acceptable payment timeline."
+    },
+    {
+      "id": "GS-032",
+      "category": "payment_terms",
+      "clause": "Die Vergütung des Auftragnehmers steht unter dem Vorbehalt einer vollständigen schriftlichen Abnahme durch den Auftraggeber. Ohne unterzeichnete Abnahmeerklärung entsteht kein Zahlungsanspruch. Die Abnahme kann ohne Angabe von Gründen verweigert werden.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 641"],
+      "expected_keywords_any": ["abnahme", "acceptance", "zahlungsanspruch", "verweigerung", "vorbehalt"],
+      "rationale": "Allowing the client to refuse acceptance without reason and withhold all payment is contrary to § 641 BGB and creates unacceptable payment risk for the freelancer."
+    },
+    {
+      "id": "GS-033",
+      "category": "confidentiality",
+      "clause": "Der Auftragnehmer verpflichtet sich, alle ihm im Rahmen der Zusammenarbeit bekannt gewordenen Informationen vertraulich zu behandeln. Diese Verpflichtung gilt für die Dauer des Vertrages sowie für einen Zeitraum von 3 Jahren nach dessen Beendigung.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["vertraulich", "confidential", "geheimhaltung", "3 jahre"],
+      "rationale": "Standard 3-year post-contractual confidentiality obligation is market-standard and does not unreasonably restrict the freelancer."
+    },
+    {
+      "id": "GS-034",
+      "category": "confidentiality",
+      "clause": "Der Auftragnehmer darf auch nach Beendigung des Vertrages dauerhaft und ohne zeitliche Begrenzung keine Informationen offenbaren, die er während der Zusammenarbeit erhalten hat. Ein Verstoß wird mit einer Vertragsstrafe von €50.000 je Einzelfall geahndet.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 307"],
+      "expected_keywords_any": ["vertraulich", "unbegrenzt", "unlimited", "vertragsstrafe", "50.000"],
+      "rationale": "Perpetual confidentiality with no time limit and a €50k penalty per breach is disproportionate and likely void under § 307 BGB (unfair terms in standard contracts)."
+    },
+    {
+      "id": "GS-035",
+      "category": "intellectual_property",
+      "clause": "Der Auftragnehmer räumt dem Auftraggeber ein einfaches, zeitlich und räumlich auf Deutschland beschränktes Nutzungsrecht an den erstellten Arbeitsergebnissen ein. Die Urheberpersönlichkeitsrechte verbleiben beim Auftragnehmer.",
+      "expected_risk": "low",
+      "expected_statute_contains": ["UrhG"],
+      "expected_keywords_any": ["nutzungsrecht", "license", "urheber", "einfach", "beschränkt"],
+      "rationale": "Simple, geographically and temporally limited licence with retained moral rights is balanced and favourable for the freelancer."
+    },
+    {
+      "id": "GS-036",
+      "category": "termination",
+      "clause": "Der Auftraggeber ist berechtigt, diesen Vertrag mit sofortiger Wirkung und ohne Einhaltung einer Kündigungsfrist zu kündigen, wenn der Auftragnehmer auch nur einmal eine vereinbarte Frist nicht einhält, unabhängig davon, ob eine Abmahnung erfolgt ist.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 314"],
+      "expected_keywords_any": ["kündigung", "termination", "fristlos", "sofortige", "abmahnung"],
+      "rationale": "Immediate termination for a single missed deadline without prior warning is disproportionate and likely void under § 307 BGB — important cause (§ 314 BGB) requires materiality."
+    },
+    {
+      "id": "GS-037",
+      "category": "data_protection",
+      "clause": "Der Auftragnehmer verarbeitet im Rahmen seiner Tätigkeit personenbezogene Daten des Auftraggebers und seiner Kunden. Zwischen den Parteien wird ein gesonderter Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO geschlossen.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["DSGVO", "Art. 28"],
+      "expected_keywords_any": ["datenschutz", "data protection", "auftragsverarbeitung", "DSGVO", "personenbezogen"],
+      "rationale": "Processing personal data requires a Data Processing Agreement under Art. 28 GDPR — the clause correctly mandates one, but the freelancer must ensure the DPA terms are balanced."
+    },
+    {
+      "id": "GS-038",
+      "category": "data_protection",
+      "clause": "Der Auftragnehmer ist verpflichtet, alle personenbezogenen Daten, auf die er im Rahmen des Projekts zugreift, ausschließlich nach den Weisungen des Auftraggebers zu verarbeiten und darf diese ohne ausdrückliche Zustimmung nicht an Dritte weitergeben oder für eigene Zwecke nutzen.",
+      "expected_risk": "low",
+      "expected_statute_contains": ["DSGVO"],
+      "expected_keywords_any": ["datenschutz", "weisung", "data protection", "personenbezogen", "weiterleitung"],
+      "rationale": "Instruction-bound processing and prohibition on third-party disclosure is standard GDPR compliance language — balanced and expected."
+    },
+    {
+      "id": "GS-039",
+      "category": "indemnification",
+      "clause": "Der Auftragnehmer stellt den Auftraggeber, seine Geschäftsführer, Mitarbeiter und Bevollmächtigten von sämtlichen Ansprüchen, Verlusten, Schäden und Kosten frei, die sich aus einer Verletzung dieser Vereinbarung oder aus der Erbringung der Dienstleistungen ergeben.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 276"],
+      "expected_keywords_any": ["freistellung", "indemnif", "ansprüche", "kosten", "verluste"],
+      "rationale": "Broad indemnification of the client entity and its representatives for all claims including costs is disproportionate for a freelancer and may not be capped."
+    },
+    {
+      "id": "GS-040",
+      "category": "indemnification",
+      "clause": "Der Auftragnehmer stellt den Auftraggeber von Ansprüchen Dritter frei, die auf einer vorsätzlichen oder grob fahrlässigen Rechtsverletzung durch den Auftragnehmer beruhen, beschränkt auf nachgewiesene direkte Schäden bis zu einem Betrag von €25.000.",
+      "expected_risk": "low",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["freistellung", "vorsatz", "grobe fahrlässigkeit", "beschränkt", "25.000"],
+      "rationale": "Indemnification limited to wilful misconduct and gross negligence, capped at €25k for direct damages only, is proportionate and acceptable."
+    },
+    {
+      "id": "GS-041",
+      "category": "dispute_resolution",
+      "clause": "Alle Streitigkeiten aus oder im Zusammenhang mit diesem Vertrag werden durch ein Schiedsgericht nach der Schiedsordnung der Deutschen Institution für Schiedsgerichtsbarkeit e.V. (DIS) endgültig entschieden. Der Schiedsort ist Frankfurt am Main.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["ZPO"],
+      "expected_keywords_any": ["schiedsgericht", "arbitration", "DIS", "streitigkeit", "Frankfurt"],
+      "rationale": "Mandatory arbitration under DIS rules excludes state courts — potentially expensive for freelancers and forecloses interim injunctive relief; scrutinise carefully."
+    },
+    {
+      "id": "GS-042",
+      "category": "dispute_resolution",
+      "clause": "Gerichtsstand für alle Streitigkeiten aus diesem Vertrag ist der Sitz des Auftraggebers. Es gilt das Recht der Bundesrepublik Deutschland.",
+      "expected_risk": "low",
+      "expected_statute_contains": ["ZPO", "BGB"],
+      "expected_keywords_any": ["gerichtsstand", "jurisdiction", "deutsches recht", "sitz", "BGB"],
+      "rationale": "Standard exclusive jurisdiction clause at the client's registered seat with German law — market-standard and not meaningfully unfair to the freelancer."
+    },
+    {
+      "id": "GS-043",
+      "category": "rate_adjustment",
+      "clause": "Der Auftraggeber ist berechtigt, den vereinbarten Stundensatz zum Beginn eines jeden Kalenderjahres um bis zu 10 % zu kürzen, sofern der Auftragnehmer der Anpassung nicht innerhalb von 14 Tagen nach Ankündigung widerspricht.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["BGB", "§ 315"],
+      "expected_keywords_any": ["stundensatz", "kürzung", "rate reduction", "einseitig", "anpassung"],
+      "rationale": "Unilateral right to reduce the hourly rate by up to 10% annually — effectively a unilateral price determination right which contravenes § 315 BGB absent objective benchmarking criteria."
+    },
+    {
+      "id": "GS-044",
+      "category": "subcontracting",
+      "clause": "Der Auftragnehmer ist berechtigt, einzelne Teile der beauftragten Leistungen an qualifizierte Unterauftragnehmer zu vergeben, soweit er den Auftraggeber vorab schriftlich informiert und die Unterauftragnehmer denselben Datenschutz- und Vertraulichkeitspflichten unterliegen.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["unterauftrag", "subcontract", "vergabe", "qualifiziert", "informiert"],
+      "rationale": "Subcontracting permitted with prior notification and pass-through of confidentiality/data protection obligations — reasonable and workable for the freelancer."
+    },
+    {
+      "id": "GS-045",
+      "category": "force_majeure",
+      "clause": "Keine der Parteien haftet für Verzögerungen oder Nichterfüllung ihrer Verpflichtungen, soweit diese auf Ereignisse höherer Gewalt zurückzuführen sind, einschließlich Naturkatastrophen, Krieg, Pandemien oder behördliche Anordnungen. Die betroffene Partei hat die andere unverzüglich zu informieren.",
+      "expected_risk": "low",
+      "expected_statute_contains": ["BGB", "§ 275"],
+      "expected_keywords_any": ["höhere gewalt", "force majeure", "pandemie", "naturkatastrophe", "unverzüglich"],
+      "rationale": "Balanced bilateral force majeure clause with prompt notification duty — standard market practice, no significant risk to freelancer."
+    },
+    {
+      "id": "GS-046",
+      "category": "non_solicitation",
+      "clause": "Der Auftragnehmer verpflichtet sich, für die Dauer von 36 Monaten nach Vertragsende keine Mitarbeiter des Auftraggebers abzuwerben, direkt oder indirekt zur Kündigung zu veranlassen oder in Dienst zu nehmen.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB", "§ 307"],
+      "expected_keywords_any": ["abwerbung", "non-solicit", "mitarbeiter", "36 monate", "kündigung"],
+      "rationale": "36-month non-solicitation for employees is longer than market standard (typically 12–24 months) and may be void as disproportionate under § 307 BGB."
+    },
+    {
+      "id": "GS-047",
+      "category": "working_time",
+      "clause": "Der Auftragnehmer erbringt seine Leistungen nach eigenem Ermessen und ist nicht an bestimmte Arbeitszeiten gebunden. Es wird ein monatliches Zeitkontingent von 100 Stunden vereinbart; Mehr- oder Minderleistungen sind im Folgemonat auszugleichen.",
+      "expected_risk": "low",
+      "expected_statute_contains": [],
+      "expected_keywords_any": ["arbeitszeit", "working time", "eigenem ermessen", "zeitkontingent", "ausgleich"],
+      "rationale": "Flexible working time at the freelancer's discretion with a monthly hour budget and rollover — preserves autonomy and is consistent with independent contractor status."
+    },
+    {
+      "id": "GS-048",
+      "category": "assignment",
+      "clause": "Der Auftraggeber ist berechtigt, diesen Vertrag und alle daraus resultierenden Rechte und Pflichten ohne Zustimmung des Auftragnehmers auf verbundene Unternehmen oder im Rahmen einer Unternehmensübertragung an Dritte zu übertragen.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB", "§ 398"],
+      "expected_keywords_any": ["abtretung", "assignment", "übertragung", "verbundene unternehmen", "zustimmung"],
+      "rationale": "Unilateral assignment right allows the client to transfer the contract without consent — the freelancer may end up working for a different entity with different norms."
+    },
+    {
+      "id": "GS-049",
+      "category": "governing_law",
+      "clause": "This Agreement shall be governed by and construed in accordance with the laws of England and Wales, excluding its conflict of laws provisions. The parties submit to the exclusive jurisdiction of the courts of England and Wales.",
+      "expected_risk": "medium",
+      "expected_statute_contains": ["BGB"],
+      "expected_keywords_any": ["governing law", "England", "jurisdiction", "conflict of laws", "construct"],
+      "rationale": "English law for a German freelancer may exclude mandatory German statutory protections (e.g. GDPR, AGB-Recht) — medium risk requiring careful review."
+    },
+    {
+      "id": "GS-050",
+      "category": "ip_license",
+      "clause": "Der Auftraggeber erhält ein unwiderrufliches, weltweites, unbeschränktes, kostenloses und auf Dritte übertragbares Nutzungsrecht an allen im Rahmen dieses Vertrages entstehenden Arbeitsergebnissen, Konzepten, Entwürfen und Zwischenergebnissen für alle bekannten und zukünftigen Nutzungsarten.",
+      "expected_risk": "high",
+      "expected_statute_contains": ["UrhG", "§ 31"],
+      "expected_keywords_any": ["nutzungsrecht", "license", "unwiderruflich", "irrevocable", "zukünftige nutzungsarten"],
+      "rationale": "Irrevocable, worldwide, unlimited, royalty-free licence including future unknown uses and sublicensing rights is the broadest possible IP transfer short of full assignment — high risk."
     }
   ]
 }

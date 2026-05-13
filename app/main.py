@@ -2,6 +2,7 @@
 import io
 import logging
 import os
+import secrets
 import shutil
 import sys
 import tempfile
@@ -18,6 +19,19 @@ logger = logging.getLogger("veritas.api")
 load_dotenv()
 
 import asyncio
+
+# Sentry error monitoring — no-ops if SENTRY_DSN is unset
+_sentry_dsn = os.getenv("SENTRY_DSN", "")
+if _sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[StarletteIntegration(), FastApiIntegration()],
+        traces_sample_rate=0.2,
+    )
+    logger.info("Sentry initialized")
 
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
@@ -248,6 +262,25 @@ async def analyze_contract(
                     "medium_risk_count": med_risk,
                     "report": report.dict() if hasattr(report, "dict") else report
                 })
+
+                # Analytics counter
+                date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                await _db.collection("analytics").document(date_key).set(
+                    {"analyses_count": gc_firestore.Increment(1)}, merge=True
+                )
+
+                # Email notifications (fire-and-forget)
+                try:
+                    user_record = auth.get_user(uid)
+                    user_email = getattr(user_record, "email", None)
+                    if user_email:
+                        from app.services.email import send_analysis_complete, send_limit_warning
+                        send_analysis_complete(user_email, file.filename, high_risk, med_risk)
+                        new_count = count + 1
+                        if new_count / limit >= 0.8:
+                            send_limit_warning(user_email, tier, new_count, limit)
+                except Exception:
+                    pass
             except Exception as e:
                 logger.warning("Failed to save analysis for uid=%s: %s", uid, e)
 
@@ -360,3 +393,110 @@ async def export_pdf(request: Request, uid: str = Depends(get_current_user)):
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=veritas-analysis.pdf"},
     )
+
+
+# ── Shareable report links ────────────────────────────────────────────────────
+
+@app.post("/api/analyses/{analysis_id}/share")
+async def share_analysis(analysis_id: str, uid: str = Depends(get_current_user)):
+    """Generate a public share token for an analysis. Returns {token, url}."""
+    if not uid:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    doc_ref = _db.collection("users").document(uid).collection("analyses").document(analysis_id)
+    doc = await doc_ref.get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Analysis not found.")
+    data = doc.to_dict()
+    token = secrets.token_urlsafe(16)
+    await _db.collection("shared_reports").document(token).set({
+        "uid": uid,
+        "analysis_id": analysis_id,
+        "filename": data.get("filename", ""),
+        "created_at": gc_firestore.SERVER_TIMESTAMP,
+        "report": data.get("report", {}),
+    })
+    url = f"https://veritas-demo.web.app/report.html?t={token}"
+    logger.info("Share token created for uid=%s analysis=%s", uid, analysis_id)
+    return {"token": token, "url": url}
+
+
+@app.get("/api/shared/{token}")
+async def get_shared_report(token: str):
+    """Public endpoint — returns a shared report by token. No auth required."""
+    doc = await _db.collection("shared_reports").document(token).get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Report not found or link has expired.")
+    data = doc.to_dict()
+    if "created_at" in data and hasattr(data["created_at"], "isoformat"):
+        data["created_at"] = data["created_at"].isoformat()
+    return data
+
+
+# ── Usage analytics (admin only) ──────────────────────────────────────────────
+
+@app.get("/api/admin/analytics")
+async def get_analytics(uid: str = Depends(get_current_user)):
+    """Return daily analysis counts for the last 30 days."""
+    admin_uid = os.getenv("ADMIN_UID")
+    if not uid or not admin_uid or uid != admin_uid:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from datetime import timedelta
+    today = datetime.now(timezone.utc).date()
+    days = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(29, -1, -1)]
+    docs = await asyncio.gather(*[
+        _db.collection("analytics").document(d).get() for d in days
+    ])
+    daily = [
+        {"date": d, "analyses": (doc.to_dict() or {}).get("analyses_count", 0)}
+        for d, doc in zip(days, docs)
+    ]
+    total = sum(r["analyses"] for r in daily)
+    return {"total_30d": total, "daily": daily}
+
+
+# ── Playbook admin endpoints ───────────────────────────────────────────────────
+
+@app.post("/api/admin/playbook")
+async def add_playbook_entry(request: Request, uid: str = Depends(get_current_user)):
+    """Add a new playbook entry with embedding. Admin only."""
+    admin_uid = os.getenv("ADMIN_UID")
+    if not uid or not admin_uid or uid != admin_uid:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    body = await request.json()
+    required = ["id", "clause_type", "risk_level", "pattern_description", "legal_reasoning"]
+    for field in required:
+        if not body.get(field):
+            raise HTTPException(status_code=400, detail=f"'{field}' is required")
+    if body["risk_level"] not in ("high", "medium", "low"):
+        raise HTTPException(status_code=400, detail="risk_level must be high, medium, or low")
+
+    from db.playbook_lookup import embed
+    embed_text = f"{body['clause_type']} {body['pattern_description']} {body['legal_reasoning']}"
+    embedding = await embed(embed_text)
+
+    from google.cloud.firestore_v1.vector import Vector
+    entry_id = body["id"]
+    await _db.collection("playbook").document(entry_id).set({
+        "id": entry_id,
+        "clause_type": body["clause_type"],
+        "risk_level": body["risk_level"],
+        "pattern_description": body["pattern_description"],
+        "example_risky_wording": body.get("example_risky_wording", ""),
+        "legal_reasoning": body["legal_reasoning"],
+        "recommended_redline": body.get("recommended_redline", ""),
+        "statute_ref": body.get("statute_ref", ""),
+        "embedding": Vector(embedding),
+    })
+    logger.info("Admin %s added playbook entry %s", uid, entry_id)
+    return {"id": entry_id, "status": "created"}
+
+
+@app.delete("/api/admin/playbook/{entry_id}")
+async def delete_playbook_entry(entry_id: str, uid: str = Depends(get_current_user)):
+    """Delete a playbook entry. Admin only."""
+    admin_uid = os.getenv("ADMIN_UID")
+    if not uid or not admin_uid or uid != admin_uid:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    await _db.collection("playbook").document(entry_id).delete()
+    logger.info("Admin %s deleted playbook entry %s", uid, entry_id)
+    return {"id": entry_id, "status": "deleted"}

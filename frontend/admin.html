@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="refined">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — veritas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=9">
+    <style>
+        .admin-wrap { max-width:960px;margin:100px auto 60px;padding:0 24px; }
+        .admin-tabs { display:flex;gap:8px;margin-bottom:32px;border-bottom:1px solid var(--border-mid);padding-bottom:0; }
+        .admin-tab { font-family:var(--font-mono);font-size:12px;color:var(--muted);padding:8px 16px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s; }
+        .admin-tab.active { color:var(--text);border-bottom-color:var(--text); }
+        .admin-panel { display:none; }
+        .admin-panel.active { display:block; }
+        .stat-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px; }
+        .stat-card { background:var(--bg-elev);border:1px solid var(--border-mid);border-radius:10px;padding:20px; }
+        .stat-val { font-size:28px;font-weight:600;color:var(--text);line-height:1; }
+        .stat-label { font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:6px; }
+        .chart-bar-wrap { display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:16px; }
+        .chart-bar { flex:1;background:var(--border-mid);border-radius:2px 2px 0 0;min-height:2px;transition:background 0.15s;cursor:default; }
+        .chart-bar:hover { background:var(--text); }
+        .field-row { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px; }
+        .field-row.full { grid-template-columns:1fr; }
+        .admin-input { width:100%;background:var(--bg-elev);border:1px solid var(--border-mid);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font-mono);font-size:12px;box-sizing:border-box; }
+        .admin-input:focus { outline:none;border-color:var(--border-strong); }
+        select.admin-input option { background:var(--bg); }
+        .admin-btn { font-family:var(--font-mono);font-size:12px;padding:8px 18px;border-radius:6px;border:1px solid var(--border-mid);background:var(--bg-elev);color:var(--text);cursor:pointer;transition:all 0.15s; }
+        .admin-btn.primary { background:var(--text);color:var(--bg);border-color:var(--text); }
+        .admin-btn.danger { color:var(--red);border-color:var(--red); }
+        .admin-btn:hover { opacity:0.85; }
+        .playbook-list { display:flex;flex-direction:column;gap:8px; }
+        .playbook-row { display:flex;align-items:center;gap:12px;background:var(--bg-elev);border:1px solid var(--border-mid);border-radius:8px;padding:12px 16px; }
+        .playbook-id { font-family:var(--font-mono);font-size:11px;color:var(--muted);width:80px;flex-shrink:0; }
+        .playbook-type { font-family:var(--font-mono);font-size:11px;flex:1;color:var(--text); }
+        .playbook-risk { font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:9999px; }
+        .playbook-risk.high { color:var(--red);border:1px solid var(--red); }
+        .playbook-risk.medium { color:var(--amber);border:1px solid var(--amber); }
+        .playbook-risk.low { color:var(--green);border:1px solid var(--green); }
+        .add-form { background:var(--bg-elev);border:1px solid var(--border-mid);border-radius:10px;padding:24px;margin-bottom:24px; }
+        .form-title { font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:16px;text-transform:uppercase;letter-spacing:.08em; }
+        .toast { position:fixed;bottom:24px;right:24px;background:var(--bg-elev);border:1px solid var(--border-mid);border-radius:8px;padding:12px 20px;font-family:var(--font-mono);font-size:12px;color:var(--text);z-index:999;opacity:0;transition:opacity 0.2s; }
+        .toast.show { opacity:1; }
+        @media(max-width:600px){ .stat-grid{grid-template-columns:1fr 1fr;} .field-row{grid-template-columns:1fr;} }
+    </style>
+</head>
+<body>
+    <nav class="pill-nav nav" id="pill-nav">
+        <div class="nav-left">
+            <a href="dashboard.html" class="brand nav-logo">
+                <span class="brand-mark">V</span>
+                <span>veritas</span>
+                <span class="brand-tag beta-tag">Admin</span>
+            </a>
+        </div>
+        <div class="nav-right">
+            <a href="dashboard.html" class="nav-btn btn-ghost-pill mono" style="text-decoration:none;">← Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="admin-wrap">
+        <div class="section-label mono" style="margin-bottom:8px;">// admin panel</div>
+        <h1 style="font-size:28px;font-weight:600;margin:0 0 32px;">Control Center</h1>
+
+        <div class="admin-tabs">
+            <button class="admin-tab active" data-tab="analytics">Analytics</button>
+            <button class="admin-tab" data-tab="playbook">Playbook</button>
+        </div>
+
+        <!-- Analytics tab -->
+        <div id="tab-analytics" class="admin-panel active">
+            <div class="stat-grid" id="stat-grid">
+                <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-label">analyses (30 days)</div></div>
+                <div class="stat-card"><div class="stat-val" id="stat-today">—</div><div class="stat-label">analyses today</div></div>
+                <div class="stat-card"><div class="stat-val" id="stat-peak">—</div><div class="stat-label">peak day</div></div>
+            </div>
+            <div class="section-label mono" style="margin-bottom:12px;">// daily volume (30 days)</div>
+            <div class="chart-bar-wrap" id="chart-bars"></div>
+        </div>
+
+        <!-- Playbook tab -->
+        <div id="tab-playbook" class="admin-panel">
+            <div class="add-form">
+                <div class="form-title">// add playbook entry</div>
+                <div class="field-row">
+                    <div><label class="mono" style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">ID (e.g. PB-008)</label>
+                    <input id="f-id" class="admin-input" placeholder="PB-008"></div>
+                    <div><label class="mono" style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Clause type</label>
+                    <input id="f-type" class="admin-input" placeholder="non_compete"></div>
+                </div>
+                <div class="field-row">
+                    <div><label class="mono" style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Risk level</label>
+                    <select id="f-risk" class="admin-input"><option value="high">HIGH</option><option value="medium">MEDIUM</option><option value="low">LOW</option></select></div>
+                    <div><label class="mono" style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Statute ref</label>
+                    <input id="f-statute" class="admin-input" placeholder="§ 74 HGB"></div>
+                </div>
+                <div class="field-row full">
+                    <label class="mono" style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Pattern description</label>
+                    <textarea id="f-pattern" class="admin-input" rows="2" placeholder="Clause restricts freelancer from working for competitors..."></textarea>
+                </div>
+                <div class="field-row full">
+                    <label class="mono" style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Legal reasoning</label>
+                    <textarea id="f-reasoning" class="admin-input" rows="2" placeholder="Under § 74 HGB, non-competes require compensation..."></textarea>
+                </div>
+                <div class="field-row full">
+                    <label class="mono" style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Recommended redline <span style="color:var(--muted)">(optional)</span></label>
+                    <input id="f-redline" class="admin-input" placeholder="Wettbewerbsverbot ist auf 6 Monate beschränkt und wird vergütet.">
+                </div>
+                <div style="margin-top:16px;">
+                    <button class="admin-btn primary" id="btn-add-entry">Add entry</button>
+                    <span id="add-status" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-left:12px;"></span>
+                </div>
+            </div>
+
+            <div class="section-label mono" style="margin-bottom:12px;">// current playbook</div>
+            <div id="playbook-list" class="playbook-list">
+                <div style="font-family:var(--font-mono);font-size:12px;color:var(--muted);">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="auth.js?v=4"></script>
+    <script type="module" src="admin.js?v=1"></script>
+</body>
+</html>
