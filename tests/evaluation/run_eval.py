@@ -40,7 +40,15 @@ PASS_THRESHOLD = 0.70
 
 async def _analyze_clause_direct(clause: str, lang: str = "en") -> dict:
     """Run a single clause through the internal analysis pipeline."""
-    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    root = str(Path(__file__).parent.parent.parent)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    # Load .env and point to the service account before pipeline modules instantiate clients.
+    from dotenv import load_dotenv
+    load_dotenv(Path(root) / ".env")
+    sa_path = Path(root) / "firebase-adminsdk.json"
+    if sa_path.exists() and not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(sa_path)
     from app.services.ingestion import ContractExtraction
     from app.services.clause_analyzer import analyze
 
