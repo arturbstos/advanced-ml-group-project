@@ -23,6 +23,9 @@
 | 009 | 2026-04-23 | Team | Claude / ChatGPT | Writing | Partially |
 | 010 | 2026-04-24 | 70170 | Claude (Cowork) | Review | Yes |
 | 011 | 2026-04-25 | 70170 | Claude (Cowork) | Coding / Data prep | Yes |
+| 012 | 2026-05-08 | 70170 | Claude (Cowork) | Coding / Data prep | Yes |
+| 013 | 2026-05-08 | 70170 | Claude (Cowork) | Coding / CI | Yes |
+| 014 | 2026-05-12 | 70170 | Claude (Cowork) | Coding / Adaptation | Yes |
 
 ---
 
@@ -174,6 +177,58 @@
 
 ---
 
+### Entry #012 — Playbook Expansion: Schema Upgrade + 66 Curated Entries
+- **Date:** 2026-05-08
+- **Author:** 70170
+- **Tool:** Claude (Anthropic Cowork, desktop app)
+- **Phase:** Coding / Data prep
+- **Prompt used:**
+  > Expand the playbook from 5 entries to 60+ covering all major risk categories in German freelance contracts. Add provenance fields (source_url, source_type) to the playbook schema. Every entry must cite a specific statute and link to an authoritative source. Use ON CONFLICT upsert with conditional embedding reset so seed_vectors.py only re-embeds rows whose content changed.
+- **Output used:** Yes — three deliverables shipped:
+  1. **`db/init.sql` schema upgrade** — added `source_url TEXT` and `source_type TEXT` (CHECK constraint: statute/case/agency/template/custom) columns to the playbook table via `ALTER TABLE … ADD COLUMN IF NOT EXISTS`. Moved original 5 entries out of init.sql into the new seed file.
+  2. **`db/seed_playbook.sql`** — 66 curated entries (PB-001..PB-066) across 16 clause categories: compensation_rate, payment_terms, late_payment_interest, intellectual_property, scheinselbstständigkeit, termination, liability, agb_kontrolle, confidentiality, non_compete, acceptance_werkvertrag, warranty_maengel, data_protection, working_time, dispute_resolution, force_majeure. Risk distribution: 19 high / 40 medium / 7 low. Every row has non-empty `statute_ref`, `source_url` (gesetze-im-internet.de, DRV PDFs, etc.), and `source_type`. Uses `ON CONFLICT (id) DO UPDATE` with conditional embedding-reset logic.
+  3. **`.env` file** — created from `.env.example` with live API key, gitignored.
+- **Modifications made:** Corrected several statute citations after cross-referencing against gesetze-im-internet.de; reorganized clause_type taxonomy from the initial 15 to 16 categories after splitting Werkvertrag acceptance from warranty.
+- **Reason for using AI:** Generating 66 entries with accurate German legal citations, example risky wording in German, and structured redlines across 16 legal categories. All entries were reviewed against primary sources before committing.
+
+---
+
+### Entry #013 — Playbook Integrity Gate + CI Workflow
+- **Date:** 2026-05-08
+- **Author:** 70170
+- **Tool:** Claude (Anthropic Cowork, desktop app)
+- **Phase:** Coding / CI
+- **Prompt used:**
+  > Build a static integrity check for seed_playbook.sql that parses the SQL directly (no database needed), validates all fields, and wire it into GitHub Actions so it runs on every push and PR.
+- **Output used:** Yes — two deliverables shipped:
+  1. **`scripts/check_playbook.py`** (~330 lines, stdlib only — zero pip dependencies) — dollar-quote-aware SQL tokenizer that parses `seed_playbook.sql` and asserts: 10 fields per row, non-empty `statute_ref` and `source_url`, `source_type` and `risk_level` within their enums, `clause_type` within a locked 16-category taxonomy, unique PB-XXX IDs, total entry count within configured band (60–200). `--check-db` flag adds live-DB verification (row count match, schema columns, 1536-dim embedding check, ID drift detection). Prints stats summary (totals by risk level, source type, clause type).
+  2. **`.github/workflows/playbook-integrity.yml`** — runs the gate on every push and PR to `main` when seed file, script, or workflow changes. Ubuntu, Python 3.11, ~5s runtime. No DB spin-up required.
+  3. **`README.md`** — added "Integrity gate" subsection with local run commands.
+- **Modifications made:** Fixed "15 categories" → "16 categories" in both README and `seed_playbook.sql` header (the script's `CANONICAL_CLAUSE_TYPES` is the source of truth).
+- **Reason for using AI:** Building a robust SQL tokenizer that handles dollar-quoted strings, multi-line fields, and German special characters (§, ä, ö, ü, ß) correctly is error-prone boilerplate. The CI integration ensures playbook quality is enforced automatically.
+
+---
+
+### Entry #014 — Rental Lease Analyzer: Full Repo Adaptation (Mietvertrag-Checker)
+- **Date:** 2026-05-12
+- **Author:** 70170
+- **Tool:** Claude (Anthropic Cowork, desktop app)
+- **Phase:** Coding / Adaptation
+- **Prompt used:**
+  > Adapt the entire freelancer contract analyzer repo into a rental lease analyzer (Mietvertrag-Checker). The architecture stays identical — just swap the domain: playbook entries become tenant traps, rate benchmarks become Mietspiegel data, statutes switch to §535ff BGB and Mietpreisbremse. Audit every file for leftover freelancer references.
+- **Output used:** Yes — full repo adaptation across multiple files:
+  1. **`.env` and `.env.example`** — DATABASE_URL changed from `freelancer_analyzer` to `rental_analyzer`.
+  2. **`db/init.sql`** — header comments updated, seed instructions changed, `sessions.contract_json` renamed to `lease_json`.
+  3. **`scripts/check_playbook.py`** — removed `mietpreisbremse` and `mietvertrag` from `CANONICAL_CLAUSE_TYPES` (neither appeared as actual clause_types in seed_playbook.sql).
+  4. **`db/statute_lookup.py` and `db/playbook_lookup.py`** — docstrings updated from freelancer-era statutes (SGB IV, UrhG) to rental-law references.
+  5. **`UX/UX.py`** — Kaution demo finding risk level corrected from "medium" to "high" (deposit exceeding §551 BGB is objectively high risk).
+  6. **`README.md`** — added full Deployment Guide section (Railway/Render, Docker Compose, Cloud VM), fixed "contracts" → "leases".
+  7. **`.gitignore`** — added `.DS_Store`.
+- **Modifications made:** The check_playbook.py taxonomy fix was identified during the audit — the original taxonomy included planned categories that didn't match actual seed data.
+- **Reason for using AI:** Systematic cross-file audit and adaptation of domain-specific references requires touching nearly every file in the repo consistently. AI assistance ensured no freelancer-era references were left behind.
+
+---
+
 ## Notes & Reflections
 - AI tools (Claude, ChatGPT) were used throughout the project primarily for code scaffolding, boilerplate generation, and debugging assistance.
 - All AI-generated code was reviewed by at least one team member before committing. Prompts are reproduced above as accurately as possible from memory and git history.
@@ -183,4 +238,4 @@
 
 ---
 
-*Last updated: 2026-04-25 by 70170*
+*Last updated: 2026-05-13 by 70170*
