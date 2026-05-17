@@ -2,7 +2,19 @@
 
 > AI-powered risk analysis for German freelance contracts. Grounded in statute, not just pattern-matching.
 
-**Live app → [veritas-demo.web.app](https://veritas-demo.web.app)**
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Hosting-FFCA28?logo=firebase&logoColor=black)
+![Firestore](https://img.shields.io/badge/Firestore-Vector%20Search-FFA000?logo=firebase&logoColor=black)
+![Cloud Run](https://img.shields.io/badge/Cloud%20Run-europe--west1-4285F4?logo=googlecloud&logoColor=white)
+![Presidio](https://img.shields.io/badge/Presidio-PII%20Redaction-2C2C54)
+![spaCy](https://img.shields.io/badge/spaCy-NER-09A3D5?logo=spacy&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?logo=javascript&logoColor=black)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
+
+**Live app → [veritas-demo.web.app](https://veritas-demo.web.app)** &nbsp;·&nbsp; **Technical report → [docs/report.pdf](docs/report.pdf)**
 
 ![Hero screenshot](docs/assets/screenshot-hero.png)
 
@@ -76,6 +88,12 @@ PDF upload
 ```
 
 **Concurrency model:** playbook vector searches (Phase A), statute lookups (Phase B), and LLM synthesis calls (Phase C) all run concurrently with `asyncio.gather`. A 15-clause contract typically completes in 7–9 seconds.
+
+---
+
+## Technical report
+
+The full write-up — methodology, the three-layer knowledge stack, evaluation methodology, design decisions, and limitations — is in [**docs/report.pdf**](docs/report.pdf).
 
 ---
 
